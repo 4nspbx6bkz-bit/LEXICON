@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AXIS</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="AXIS">
+<link rel="apple-touch-icon" href="icon512.png">
+
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="training">
+<!-- ============================= HOME ============================= -->
+<div id="home" class="panel center visible">
+  <!-- STEP 1: Escolher Training/Performance -->
+  <div id="home-step1">
+    <div class="mode-title">AXIS</div>
+
+    <div class="label">Modo de Uso</div>
+    <button class="btn" onclick="setModePerformance()">Performance Mode</button>
+    <button class="btn" onclick="setModeTraining()">Training Mode</button>
+  </div>
+
+  <!-- STEP 2: Escolher modo de input -->
+  <div id="home-step2" style="display:none;">
+    <div class="mode-title">Selecione o Modo</div>
+
+    <button class="btn" onclick="startSwipe()">Swipe Mode</button>
+    <button class="btn" onclick="startPigback()">Pigbacking</button>
+    <button class="btn" onclick="startGrade()">Grade Mode</button>
+    <button class="btn" onclick="startLexicon()">Lexicon</button>
+
+    <button class="btn small" onclick="goHome(true)">Voltar</button>
+  </div>
+</div>
+
+<!-- ============================= SWIPE MODE ============================= -->
+<div id="swipePanel" class="panel center">
+  <div class="mode-title">SWIPE MODE</div>
+
+  <!-- Step: gênero -->
+  <div class="swipe-step" id="swipe-step-gender">
+    <div class="label">Gênero <span class="hint">(Swipe ↑/↓)</span></div>
+    <div id="swipeGender" class="big">M</div>
+    <div class="hint">Swipe → para ir ao número de letras</div>
+  </div>
+
+  <!-- Step: número de letras -->
+  <div class="swipe-step" id="swipe-step-length" style="display:none;">
+    <div class="label">Número de Letras <span class="hint">(Swipe ↑/↓)</span></div>
+    <div id="swipeLength" class="big">6</div>
+    <div class="hint">Swipe ← volta | Swipe → vai para as letras</div>
+  </div>
+
+  <!-- Step: letras -->
+  <div class="swipe-step" id="swipe-step-letters" style="display:none;">
+    <div class="label">Letras Aproximadas</div>
+    <div id="swipeLetters" class="big">_ _ _</div>
+    <div class="hint">
+      Swipe ↑/↓ altera a letra atual<br>
+      Swipe → vai para a próxima letra / mostra resultado
+    </div>
+  </div>
+
+  <button class="btn small" onclick="goHome(true)">Menu</button>
+</div>
+
+<!-- ============================= PIGBACKING ============================= -->
+<div id="pigbackPanel" class="panel center">
+  <div class="mode-title">PIGBACKING</div>
+
+  <!-- Step: gênero -->
+  <div class="pig-step" id="pig-step-gender">
+    <div class="label">Gênero <span class="hint">(Swipe ↑/↓)</span></div>
+    <div id="pigGender" class="big">M</div>
+    <div class="hint">Swipe → para ir ao número de letras</div>
+  </div>
+
+  <!-- Step: número de letras -->
+  <div class="pig-step" id="pig-step-length" style="display:none;">
+    <div class="label">Número de Letras <span class="hint">(Swipe ↑/↓)</span></div>
+    <div id="pigLength" class="big">6</div>
+    <div class="hint">Swipe ← volta | Swipe → vai para as letras</div>
+  </div>
+
+  <!-- Step: letras -->
+  <div class="pig-step" id="pig-step-letters" style="display:none;">
+    <div class="label">Letras</div>
+    <div id="pigLetters" class="big">_ _ _</div>
+    <div class="hint">
+      1ª letra é real, 2ª e 3ª são aproximadas<br>
+      Swipe ↑/↓ altera a letra atual<br>
+      Swipe → vai para a próxima / mostra resultado
+    </div>
+  </div>
+
+  <button class="btn small" onclick="goHome(true)">Menu</button>
+</div>
+
+<!-- ============================= GRADE SETUP (3 ETAPAS) ============================= -->
+<div id="gradeSetupPanel" class="panel center">
+  <div class="mode-title">GRADE MODE</div>
+
+  <!-- etapa 1: gênero -->
+  <div id="grade-step-gender" class="grade-step">
+    <div class="label">Gênero <span class="hint">(Swipe ↑/↓)</span></div>
+    <div id="gradeGender" class="big">M</div>
+    <div class="hint">Swipe → para ir ao número de letras</div>
+  </div>
+
+  <!-- etapa 2: número de letras -->
+  <div id="grade-step-length" class="grade-step" style="display:none;">
+    <div class="label">Número de Letras <span class="hint">(Swipe ↑/↓)</span></div>
+    <div id="gradeLength" class="big">6</div>
+    <div class="hint">Swipe ← volta | Swipe → vai para o resumo</div>
+  </div>
+
+  <!-- etapa 3: resumo + letras já selecionadas -->
+  <div id="grade-step-summary" class="grade-step" style="display:none;">
+    <div class="label">Letras Selecionadas</div>
+    <div id="gradeLettersDisplay" class="big">_ _ _</div>
+    <div class="hint">Swipe → para abrir a grade de letras</div>
+  </div>
+
+  <button class="btn small" onclick="goHome(true)">Menu</button>
+</div>
+
+<!-- ============================= GRADE GRID ============================= -->
+<div id="gradeLettersPanel" class="panel center">
+  <div class="mode-title">Escolha as Letras</div>
+
+  <div id="gradeLetterGrid" class="letter-grid"></div>
+
+  <button class="btn" onclick="gradeDiscover()">Descobrir Nome</button>
+  <button class="btn small" onclick="resetGradeLetters()">Reset</button>
+  <button class="btn small" onclick="goHome(true)">Menu</button>
+</div>
+
+<!-- ============================= LEXICON – VC ============================= -->
+<div id="lexiconVCPanel" class="panel center">
+  <div class="mode-title">LEXICON</div>
+
+  <!-- Step 1: Gênero -->
+  <div id="lex-step1">
+    <div class="label">Gênero</div>
+    <button id="genderBtn" class="btn small" onclick="toggleGender()">M</button>
+    <div class="hint">Toque em Continuar</div>
+    <button class="btn" onclick="lexiconGoToStep2()">Continuar</button>
+  </div>
+
+  <!-- Step 2: Padrão VC -->
+  <div id="lex-step2" style="display:none;">
+    <div class="label">Padrão VC</div>
+    <div id="lexiconVCPreview" class="big"></div>
+
+    <div class="label">Tamanho</div>
+    <div id="lexiconLengthPreview" class="big">0</div>
+
+    <div class="hint">Swipe ↑ = 1 | Swipe ↓ = 2</div>
+
+    <button class="btn" onclick="lexiconFinishVC()">Continuar</button>
+  </div>
+
+  <button class="btn small" onclick="goHome(true)">Menu</button>
+</div>
+
+<!-- Painéis extras do Lexicon (stubs por enquanto) -->
+<div id="lexiconVowelPanel" class="panel center">
+  <div class="mode-title">1ª vogal na posição</div>
+  <div id="vowelPosGrid" class="pos-grid"></div>
+
+  <button class="btn small" onclick="goHome(true)">Menu</button>
+</div>
+
+<div id="lexiconShapePanel" class="panel center">
+  <div class="mode-title">
+    Forma da letra – posição <span id="lexiconShapePos"></span>
+  </div>
+
+  <div class="shape-row">
+    <button class="btn small" onclick="lexiconAnswerShape('R')">Reta</button>
+    <button class="btn small" onclick="lexiconAnswerShape('C')">Curva</button>
+    <button class="btn small" onclick="lexiconAnswerShape('M')">Mista</button>
+  </div>
+
+  <button class="btn small" onclick="goHome(true)">Menu</button>
+</div>
+
+<div id="lexiconLetterPanel" class="panel center">
+  <div class="mode-title">
+    Letra exata – posição <span id="lexiconLetterPos"></span>
+  </div>
+
+  <div id="lexiconLetterGrid" class="letter-grid"></div>
+
+  <button class="btn small" onclick="goHome(true)">Menu</button>
+</div>
+
+<div id="lexiconBinaryPanel" class="panel center">
+  <div class="mode-title" id="lexiconBinaryText">1ª vogal ≤ X?</div>
+
+  <div class="shape-row">
+    <button class="btn small" onclick="lexiconAnswerBinary(true)">Sim</button>
+    <button class="btn small" onclick="lexiconAnswerBinary(false)">Não</button>
+  </div>
+
+  <button class="btn small" onclick="goHome(true)">Menu</button>
+</div>
+
+<!-- ============================= RESULTADOS ============================= -->
+<div id="resultPanel" class="panel center">
+  <div class="mode-title">Resultados</div>
+
+  <pre id="resultBox" class="result-box"></pre>
+
+  <button class="btn" onclick="goHome(true)">Menu</button>
+</div>
+
+<script src="script.js"></script>
+
+<!-- Service Worker -->
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+}
+</script>
+
+</body>
+</html>
