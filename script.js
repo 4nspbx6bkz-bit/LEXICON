@@ -3265,29 +3265,6 @@ function goBackOneStep() {
     }
   }
 
-   /* ============================================================
-   INICIALIZAÇÃO DO AXIS (APÓS LICENÇA)
-   ============================================================ */
-
-function iniciarAxis() {
-  // Aqui você coloca qualquer coisa que precisa acontecer ao abrir o app.
-  // Como o AXIS já inicia sozinho, provavelmente você não precisa por nada aqui.
-  // Mas manteremos essa função para garantir a ordem correta.
-  console.log("AXIS iniciado após validação da licença.");
-}
-
-   /* ============================================================
-   CARREGAR AXIS SOMENTE APÓS VALIDAR A LICENÇA
-   ============================================================ */
-
-window.addEventListener("load", async () => {
-  try {
-    await validateLicenseOrDie();   // ▲ VALIDA A LICENÇA
-    iniciarAxis();                  // ▲ INICIA O AXIS SOMENTE SE LIBERAR
-  } catch (err) {
-    console.error("Falha de licença:", err);
-  }
-});
   /* -------------- PIGBACK MODE -------------- */
   if ($("#pigbackPanel").classList.contains("visible")) {
     if (pigStage === "letters") {
@@ -3385,3 +3362,26 @@ window.addEventListener("load", async () => {
     return;
   }
 }
+ /* ============================================================
+   INICIALIZAÇÃO DO AXIS (APÓS LICENÇA)
+   ============================================================ */
+
+function iniciarAxis() {
+  // Aqui você coloca qualquer coisa que precisa acontecer ao abrir o app.
+  // Como o AXIS já inicia sozinho, provavelmente você não precisa por nada aqui.
+  // Mas manteremos essa função para garantir a ordem correta.
+  console.log("AXIS iniciado após validação da licença.");
+}
+
+   /* ============================================================
+   CARREGAR AXIS SOMENTE APÓS VALIDAR A LICENÇA
+   ============================================================ */
+
+window.addEventListener("load", async () => {
+  try {
+    await validateLicenseOrDie();   // ▲ VALIDA A LICENÇA
+    iniciarAxis();                  // ▲ INICIA O AXIS SOMENTE SE LIBERAR
+  } catch (err) {
+    console.error("Falha de licença:", err);
+  }
+});
