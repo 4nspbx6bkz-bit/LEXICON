@@ -36,6 +36,72 @@ function openOnly(id) {
   updateHUD(); // sempre atualiza HUD quando troca painel
 }
 
+// ======================= LICENÇA AXIS ===========================
+async function validateLicenseOrDie() {
+  const STORAGE_KEY = "axis_license_code_v1";
+
+  let license = localStorage.getItem(STORAGE_KEY);
+
+  if (!license) {
+    const params = new URLSearchParams(window.location.search);
+    license = params.get("license");
+  }
+
+  if (!license) {
+    document.body.innerHTML = `
+      <div style="padding:40px; font-family: -apple-system, system-ui, sans-serif; text-align:center; background:black; color:white;">
+        <h1>AXIS – Licença necessária</h1>
+        <p>Este dispositivo não possui uma licença válida.</p>
+        <p>Use o link oficial enviado pelo Dr. Arthur.</p>
+      </div>
+    `;
+    throw new Error("No license code found");
+  }
+
+  localStorage.setItem(STORAGE_KEY, license);
+
+  const apiBase = "https://lexicon.4nspbx6bkz.workers.dev";
+  const url = `${apiBase}/check?license=${encodeURIComponent(license)}`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.valid) {
+      let msg = "Licença inválida ou já utilizada em outro aparelho.";
+
+      if (data.reason === "license_not_found") {
+        msg = "Este código de licença não existe.";
+      }
+
+      if (data.reason === "different_device") {
+        msg = "Esta licença já foi ativada em outro aparelho.";
+      }
+
+      document.body.innerHTML = `
+        <div style="padding:40px; font-family: -apple-system, system-ui, sans-serif; text-align:center; background:black; color:white;">
+          <h1>AXIS – Acesso negado</h1>
+          <p>${msg}</p>
+        </div>
+      `;
+      throw new Error("License not valid");
+    }
+
+    console.log("Licença AXIS OK:", data);
+
+  } catch (err) {
+    console.error(err);
+    document.body.innerHTML = `
+      <div style="padding:40px; font-family: -apple-system, system-ui, sans-serif; text-align:center; background:black; color:white;">
+        <h1>Erro ao validar licença</h1>
+        <p>Checar conexão com a internet.</p>
+      </div>
+    `;
+    throw err;
+  }
+}
+// ================================================================
+
 /* ============================================================
    HUD – pequeno canto inferior esquerdo (apenas performance)
    ============================================================ */
