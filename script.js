@@ -3110,3 +3110,189 @@ function lexiconAnswerBinary(yes) {
   lexBinaryQuestion = null;
   proceedNextLexQuestion();
 }
+
+
+/* ============================================================
+   GESTOS GLOBAIS PARA PERFORMANCE
+   ============================================================ */
+
+document.addEventListener("touchstart", function (e) {
+  // Detectar dois dedos
+  if (document.body.classList.contains("performance")) {
+    if (e.touches.length === 2) {
+      // Dois dedos tocados: registrar posição inicial
+      window._twoFingerStartY = e.touches[0].clientY;
+    }
+
+    // Swipe para voltar etapa no modo atual
+    if (e.touches.length === 1) {
+      window._oneFingerStartX = e.touches[0].clientX;
+    }
+  }
+});
+
+document.addEventListener("touchend", function (e) {
+  if (!document.body.classList.contains("performance")) return;
+
+  /* ===============================================
+     1) DOIS DEDOS → VOLTA PARA A ESCOLHA DO MODO
+     =============================================== */
+  if (window._twoFingerStartY !== undefined && e.changedTouches.length > 0) {
+    const endY = e.changedTouches[0].clientY;
+    const diffY = endY - window._twoFingerStartY;
+
+    if (diffY > 40) {
+      // Volta para seleção de performance
+      homeStep = 2;
+      openOnly("home");
+      show("home-step2");
+    }
+
+    window._twoFingerStartY = undefined;
+  }
+
+  /* ===============================================
+     2) SWIPE PARA ESQUERDA → VOLTAR UMA ETAPA
+     =============================================== */
+  if (window._oneFingerStartX !== undefined) {
+    const endX = e.changedTouches[0].clientX;
+    const diffX = endX - window._oneFingerStartX;
+
+    if (diffX < -40) {
+      goBackOneStep();
+    }
+    window._oneFingerStartX = undefined;
+  }
+});
+
+/* ============================================================
+   FUNÇÃO: VOLTAR UMA ETAPA EM QUALQUER MODO
+   ============================================================ */
+function goBackOneStep() {
+
+  /* -------------- SWIPE MODE -------------- */
+  if ($("#swipePanel").classList.contains("visible")) {
+    if (swipeStage === "letters") {
+      swipeStage = "length";
+      swipeLetterIndex = 0;
+      openOnly("swipePanel");
+      $("#swipe-step-gender").style.display = "none";
+      $("#swipe-step-length").style.display = "";
+      $("#swipe-step-letters").style.display = "none";
+      updateHUD();
+      return;
+    }
+    if (swipeStage === "length") {
+      swipeStage = "gender";
+      openOnly("swipePanel");
+      $("#swipe-step-gender").style.display = "";
+      $("#swipe-step-length").style.display = "none";
+      $("#swipe-step-letters").style.display = "none";
+      updateHUD();
+      return;
+    }
+    if (swipeStage === "gender") {
+      homeStep = 2;
+      openOnly("home");
+      show("home-step2");
+      return;
+    }
+  }
+
+  /* -------------- PIGBACK MODE -------------- */
+  if ($("#pigbackPanel").classList.contains("visible")) {
+    if (pigStage === "letters") {
+      pigStage = "length";
+      openOnly("pigbackPanel");
+      $("#pig-step-gender").style.display = "none";
+      $("#pig-step-length").style.display = "";
+      $("#pig-step-letters").style.display = "none";
+      updateHUD();
+      return;
+    }
+    if (pigStage === "length") {
+      pigStage = "gender";
+      openOnly("pigbackPanel");
+      $("#pig-step-gender").style.display = "";
+      $("#pig-step-length").style.display = "none";
+      $("#pig-step-letters").style.display = "none";
+      updateHUD();
+      return;
+    }
+    if (pigStage === "gender") {
+      homeStep = 2;
+      openOnly("home");
+      show("home-step2");
+      return;
+    }
+  }
+
+  /* -------------- GRADE MODE -------------- */
+  if ($("#gradeSetupPanel").classList.contains("visible")) {
+    if (gradeStage === "length") {
+      gradeStage = "gender";
+      openOnly("gradeSetupPanel");
+      $("#grade-step-gender").style.display = "";
+      $("#grade-step-length").style.display = "none";
+      updateHUD();
+      return;
+    }
+    if (gradeStage === "gender") {
+      homeStep = 2;
+      openOnly("home");
+      show("home-step2");
+      return;
+    }
+  }
+
+  /* -------------- GRADE GRID -------------- */
+  if ($("#gradeLettersPanel").classList.contains("visible")) {
+    // volta para tamanho
+    gradeStage = "length";
+    openOnly("gradeSetupPanel");
+    $("#grade-step-gender").style.display = "none";
+    $("#grade-step-length").style.display = "";
+    updateHUD();
+    return;
+  }
+
+  /* -------------- LEXICON VC -------------- */
+  if ($("#lexiconVCPanel").classList.contains("visible")) {
+    if (lexStep === 2) {
+      lexStep = 1;
+      $("#lex-step1").style.display = "";
+      $("#lex-step2").style.display = "none";
+      updateHUD();
+      return;
+    }
+    if (lexStep === 1) {
+      homeStep = 2;
+      openOnly("home");
+      show("home-step2");
+      return;
+    }
+  }
+
+  /* -------------- LEXICON PERGUNTAS -------------- */
+  if (
+    $("#lexiconVowelPanel").classList.contains("visible") ||
+    $("#lexiconShapePanel").classList.contains("visible") ||
+    $("#lexiconLetterPanel").classList.contains("visible") ||
+    $("#lexiconBinaryPanel").classList.contains("visible")
+  ) {
+    // volta para o VC
+    openOnly("lexiconVCPanel");
+    $("#lex-step1").style.display = "none";
+    $("#lex-step2").style.display = "";
+    updateHUD();
+    return;
+  }
+
+  /* -------------- RESULTADOS -------------- */
+  if ($("#resultPanel").classList.contains("visible")) {
+    homeStep = 2;
+    openOnly("home");
+    show("home-step2");
+    return;
+  }
+}
