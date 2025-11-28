@@ -1,0 +1,262 @@
+/* ================= BASE ================= */
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  color: #fff;
+  font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  overflow: hidden;
+}
+
+/* PAINÉIS */
+
+.panel {
+  display: none;
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  padding: 24px;
+  background: #000;
+  color: #fff;
+}
+
+.panel.visible {
+  display: flex;
+}
+
+.panel.center {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* TIPOGRAFIA */
+
+.mode-title {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.label {
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.big {
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+
+.hint {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-bottom: 16px;
+}
+
+/* BOTÕES */
+
+.btn {
+  width: 100%;
+  max-width: 260px;
+  padding: 12px 16px;
+  margin: 6px 0;
+  border-radius: 999px;
+  border: 1px solid #444;
+  background: #111;
+  color: #fff;
+  font-size: 16px;
+  text-align: center;
+}
+
+.btn.small {
+  max-width: 180px;
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
+.btn:active {
+  background: #222;
+  transform: scale(0.98);
+}
+
+/* GRID GERAL */
+
+.letter-grid, .pos-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+  margin: 16px auto;
+}
+
+.letter-grid button, .pos-grid button {
+  padding: 10px 0;
+  border-radius: 10px;
+  border: 1px solid #444;
+  background: #111;
+  color: #fff;
+  font-size: 18px;
+}
+
+/* SHAPES */
+
+.shape-row {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* RESULTADOS */
+
+.result-box {
+  width: 100%;
+  max-width: 360px;
+  max-height: 60vh;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #050505;
+  color: #0f0;
+  font-size: 14px;
+  overflow-y: auto;
+}
+
+/* ========================== PERFORMANCE MODE ========================== */
+
+/* HOME deve continuar NORMAL */
+body.performance #home .mode-title,
+body.performance #home .label,
+body.performance #home button {
+  display: block !important;
+}
+
+/* ===== Esconde interface de TODAS AS ETAPAS dos modos ===== */
+
+body.performance #swipePanel .mode-title,
+body.performance #swipePanel .label,
+body.performance #swipePanel .hint,
+body.performance #swipePanel .big,
+body.performance #swipePanel .btn,
+
+body.performance #pigbackPanel .mode-title,
+body.performance #pigbackPanel .label,
+body.performance #pigbackPanel .hint,
+body.performance #pigbackPanel .big,
+body.performance #pigbackPanel .btn,
+
+body.performance #gradeSetupPanel .mode-title,
+body.performance #gradeSetupPanel .label,
+body.performance #gradeSetupPanel .hint,
+body.performance #gradeSetupPanel .big,
+body.performance #gradeSetupPanel .btn,
+
+body.performance #lexiconVCPanel .mode-title,
+body.performance #lexiconVCPanel .label,
+body.performance #lexiconVCPanel .hint,
+body.performance #lexiconVCPanel .big,
+body.performance #lexiconVCPanel .btn {
+  display: none !important;
+}
+
+/* ===== EXCEÇÕES (coisas que DEVEM aparecer) ===== */
+
+/* GRADE das letras */
+/* ============================= GRADE — PERFORMANCE ============================= */
+
+/* Mostrar somente a grade */
+body.performance #gradeLettersPanel .letter-grid {
+  display: grid !important;
+}
+
+/* Todos os botões escondidos */
+body.performance #gradeLettersPanel button {
+  display: none !important;
+}
+
+/* Mas manter os botões *internos* da grade visíveis */
+body.performance #gradeLettersPanel .letter-grid button {
+  display: block !important;
+}
+
+/* Esconder completamente o título */
+body.performance #gradeLettersPanel .mode-title {
+  display: none !important;
+}
+
+/* LEXICON — perguntas */
+body.performance #lexiconVowelPanel .mode-title,
+body.performance #lexiconShapePanel .mode-title,
+body.performance #lexiconLetterPanel .mode-title,
+body.performance #lexiconBinaryPanel .mode-title {
+  display: block !important;
+}
+
+body.performance #lexiconVowelPanel button,
+body.performance #lexiconShapePanel button,
+body.performance #lexiconLetterPanel button,
+body.performance #lexiconBinaryPanel button,
+body.performance #lexiconVowelPanel .pos-grid,
+body.performance #lexiconLetterPanel .letter-grid,
+body.performance #lexiconShapePanel .shape-row {
+  display: grid !important;
+}
+
+/* RESULTADOS */
+body.performance #resultPanel .result-box {
+  display: block !important;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  width: auto;
+  max-width: 70%;
+  background: #000;
+  border: none;
+  color: #0f0;
+  font-size: 20px;
+}
+
+body.performance #resultPanel .mode-title,
+body.performance #resultPanel button {
+  display: none !important;
+}
+
+/* ========================== HUD ========================== */
+
+#hud {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  display: flex;
+  gap: 6px;
+  z-index: 9999;
+}
+
+/* quadradinhos individuais */
+.hud-box {
+  background: #333;
+  color: #ccc;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+}
