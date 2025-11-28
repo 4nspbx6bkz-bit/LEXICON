@@ -3276,6 +3276,18 @@ function iniciarAxis() {
   console.log("AXIS iniciado após validação da licença.");
 }
 
+   /* ============================================================
+   CARREGAR AXIS SOMENTE APÓS VALIDAR A LICENÇA
+   ============================================================ */
+
+window.addEventListener("load", async () => {
+  try {
+    await validateLicenseOrDie();   // ▲ VALIDA A LICENÇA
+    iniciarAxis();                  // ▲ INICIA O AXIS SOMENTE SE LIBERAR
+  } catch (err) {
+    console.error("Falha de licença:", err);
+  }
+});
   /* -------------- PIGBACK MODE -------------- */
   if ($("#pigbackPanel").classList.contains("visible")) {
     if (pigStage === "letters") {
