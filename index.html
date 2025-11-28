@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AXIS</title>
 
-<!-- PWA -->
+<!-- PWA (vai ser ignorado em file://, sem erro) -->
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -102,7 +102,7 @@
   <button class="btn small" onclick="goHome(true)">Menu</button>
 </div>
 
-<!-- ============================= GRADE SETUP (3 ETAPAS) ============================= -->
+<!-- ============================= GRADE SETUP (2 ETAPAS: gênero + tamanho) ============================= -->
 <div id="gradeSetupPanel" class="panel center">
   <div class="mode-title">GRADE MODE</div>
 
@@ -117,10 +117,10 @@
   <div id="grade-step-length" class="grade-step" style="display:none;">
     <div class="label">Número de Letras <span class="hint">(Swipe ↑/↓)</span></div>
     <div id="gradeLength" class="big">6</div>
-    <div class="hint">Swipe ← volta | Swipe → vai para o resumo</div>
+    <div class="hint">Swipe ← volta | Swipe → abre a grade</div>
   </div>
 
-  <!-- etapa 3: resumo + letras já selecionadas -->
+  <!-- (summary ainda existe no JS, mas não é usado mais) -->
   <div id="grade-step-summary" class="grade-step" style="display:none;">
     <div class="label">Letras Selecionadas</div>
     <div id="gradeLettersDisplay" class="big">_ _ _</div>
@@ -136,6 +136,7 @@
 
   <div id="gradeLetterGrid" class="letter-grid"></div>
 
+  <!-- TRAINING: botão Descobrir Nome funciona -->
   <button class="btn" onclick="gradeDiscover()">Descobrir Nome</button>
   <button class="btn small" onclick="resetGradeLetters()">Reset</button>
   <button class="btn small" onclick="goHome(true)">Menu</button>
@@ -149,7 +150,7 @@
   <div id="lex-step1">
     <div class="label">Gênero</div>
     <button id="genderBtn" class="btn small" onclick="toggleGender()">M</button>
-    <div class="hint">Toque em Continuar</div>
+    <div class="hint">Swipe ↑ = M | Swipe ↓ = F (Performance) ou toque no botão</div>
     <button class="btn" onclick="lexiconGoToStep2()">Continuar</button>
   </div>
 
@@ -161,7 +162,7 @@
     <div class="label">Tamanho</div>
     <div id="lexiconLengthPreview" class="big">0</div>
 
-    <div class="hint">Swipe ↑ = 1 | Swipe ↓ = 2</div>
+    <div class="hint">Swipe ↑ = 1 | Swipe ↓ = 2 | Swipe → continua (Performance)</div>
 
     <button class="btn" onclick="lexiconFinishVC()">Continuar</button>
   </div>
@@ -169,7 +170,7 @@
   <button class="btn small" onclick="goHome(true)">Menu</button>
 </div>
 
-<!-- Painéis extras do Lexicon (stubs por enquanto) -->
+<!-- Painéis extras do Lexicon -->
 <div id="lexiconVowelPanel" class="panel center">
   <div class="mode-title">1ª vogal na posição</div>
   <div id="vowelPosGrid" class="pos-grid"></div>
@@ -223,11 +224,24 @@
 
 <script src="script.js"></script>
 
-<!-- Service Worker -->
+<!-- HUD fixo no canto inferior esquerdo -->
+<div id="hud"></div>
+
+<!-- Service Worker (ignora em file://, sem quebrar nada) -->
 <script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
-}
+(function () {
+  try {
+    if (location.protocol === "http:" || location.protocol === "https:") {
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("sw.js");
+      }
+    } else {
+      console.log("PWA desativado no modo file://");
+    }
+  } catch (e) {
+    console.log("SW desativado:", e);
+  }
+})();
 </script>
 
 </body>
