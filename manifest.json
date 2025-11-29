@@ -1,8 +1,7 @@
 {
   "name": "AXIS",
   "short_name": "AXIS",
-  "start_url": "/LEXICON/?source=pwa",
-  "scope": "/LEXICON/",
+  "start_url": "./?source=pwa",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
