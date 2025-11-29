@@ -3192,13 +3192,16 @@ async function validateLicenseOrDie() {
     throw err;
   }
 }
-
-// INICIAR SOMENTE DEPOIS DA LICENÇA
-window.addEventListener("load", async () => {
-  try {
-    await validateLicenseOrDie();
-    console.log("AXIS iniciado.");
-  } catch (err) {
-    console.error("Falha de licença:", err);
-  }
+// Delay para evitar bloqueios do GitHub Pages / iOS
+const LICENSE_DELAY = 300;
+// INICIAR SOMENTE DEPOIS DA LICENÇA — COM DELAY DE 300ms
+window.addEventListener("load", () => {
+  setTimeout(async () => {
+    try {
+      await validateLicenseOrDie();
+      console.log("AXIS iniciado.");
+    } catch (err) {
+      console.error("Falha de licença:", err);
+    }
+  }, LICENSE_DELAY);
 });
