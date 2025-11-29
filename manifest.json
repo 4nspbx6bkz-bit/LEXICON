@@ -1,10 +1,8 @@
 {
   "name": "AXIS",
   "short_name": "AXIS",
-  "start_url": "./?source=pwa",
-  "scope": "./",
+  "start_url": "index.html",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#000000",
   "theme_color": "#000000",
   "description": "AXIS — Ferramenta Profissional de Mentalismo",
@@ -12,14 +10,12 @@
     {
       "src": "icon192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     },
     {
       "src": "icon512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     }
   ]
 }
