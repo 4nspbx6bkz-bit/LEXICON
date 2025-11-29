@@ -1,16 +1,13 @@
 /* ============================================================
    AXIS – Nomes Mágicos
-   Swipe / Pigbacking / Grade / Lexicon (simples)
+   Swipe / Pigbacking / Grade / Lexicon
    ============================================================ */
 
 /* ---------- Helpers ---------- */
 
 function normalize(str) {
   if (!str) return "";
-  return str
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
 function $(id) {
@@ -33,74 +30,10 @@ function openOnly(id) {
   );
   const el = $(id);
   if (el) el.classList.add("visible");
-  updateHUD(); // sempre atualiza HUD quando troca painel
 }
-
-// ======================= LICENÇA AXIS (WORKER FINAL) ===========================
-async function validateLicenseOrDie() {
-  const STORAGE_KEY = "axis_license_code_v1";
-
-  let license = localStorage.getItem(STORAGE_KEY);
-
-  // 1. Tenta pegar via URL
-  if (!license) {
-    const params = new URLSearchParams(window.location.search);
-    license = params.get("license");
-  }
-
-  // 2. Se não tiver → bloquear
-  if (!license) {
-    document.body.innerHTML = `
-      <div style="padding:40px; font-family: -apple-system, system-ui, sans-serif; text-align:center; background:black; color:white;">
-        <h1>AXIS – Licença necessária</h1>
-        <p>Este dispositivo não possui uma licença válida.</p>
-        <p>Use o link oficial enviado pelo Dr. Arthur.</p>
-      </div>
-    `;
-    throw new Error("No license code found");
-  }
-
-  // 3. Salva para próximas aberturas
-  localStorage.setItem(STORAGE_KEY, license);
-
-  // 4. Valida no WORKER QUE JÁ FUNCIONA
-  const url = `https://axislicense.d2bz92x2cp.workers.dev/check?key=${encodeURIComponent(license)}`;
-
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (!data.valid) {
-      document.body.innerHTML = `
-        <div style="padding:40px; font-family: -apple-system, system-ui, sans-serif; text-align:center; background:black; color:white;">
-          <h1>AXIS – Acesso negado</h1>
-          <p>Licença inválida ou já utilizada em outro aparelho.</p>
-        </div>
-      `;
-      throw new Error("Invalid license");
-    }
-
-    console.log("Licença válida:", data.device);
-    return true;
-
-  } catch (err) {
-    console.error(err);
-    document.body.innerHTML = `
-      <div style="padding:40px; font-family: -apple-system, system-ui, sans-serif; text-align:center; background:black; color:white;">
-        <h1>Erro ao validar licença</h1>
-        <p>Cheque sua conexão com a internet.</p>
-      </div>
-    `;
-    throw err;
-  }
-}
-function iniciarAxis() {
-  console.log("AXIS iniciado após validar a licença.");
-}
-// ================================================================
 
 /* ============================================================
-   HUD – pequeno canto inferior esquerdo (apenas performance)
+   HUD – canto inferior esquerdo
    ============================================================ */
 
 let hudGender = "";
@@ -111,102 +44,13 @@ function updateHUD() {
   const hud = $("hud");
   if (!hud) return;
 
-  // Mostra HUD apenas em performance
-  if (!document.body.classList.contains("performance")) {
-    hud.innerHTML = "";
-    return;
-  }
+  const g = hudGender ? hudGender : "";
+  const len = hudLength ? String(hudLength) : "";
+  const letters = hudLetters ? hudLetters : "";
 
-  // Helper para montar HUD
-  function setHUD(items) {
-    hud.innerHTML = "";
-    items.forEach(val => {
-      if (val && val !== "" && val !== "_ _ _") {
-        const box = document.createElement("div");
-        box.className = "hud-box";
-        box.innerText = val;
-        hud.appendChild(box);
-      }
-    });
-  }
-
-  /* ============================
-        SWIPE MODE
-     ============================ */
-  if ($("swipePanel").classList.contains("visible")) {
-    if (swipeStage === "gender") {
-      setHUD([swipeGender]);
-    } else if (swipeStage === "length") {
-      setHUD([swipeGender, swipeLength]);
-    } else if (swipeStage === "letters") {
-      setHUD([swipeGender, swipeLength, swipeLetters.join("")]);
-    }
-    return;
-  }
-
-  /* ============================
-        PIGBACK MODE
-     ============================ */
-  if ($("pigbackPanel").classList.contains("visible")) {
-    if (pigStage === "gender") {
-      setHUD([pigGender]);
-    } else if (pigStage === "length") {
-      setHUD([pigGender, pigLength]);
-    } else if (pigStage === "letters") {
-      setHUD([pigGender, pigLength, pigLetters.join("")]);
-    }
-    return;
-  }
-
-  /* ============================
-        GRADE MODE
-     ============================ */
-  if ($("gradeSetupPanel").classList.contains("visible")) {
-    if (gradeStage === "gender") {
-      setHUD([gradeGender]);
-    } else if (gradeStage === "length") {
-      setHUD([gradeGender, gradeLength]);
-    } else if (gradeStage === "summary") {
-      setHUD([gradeGender, gradeLength, gradeLetters.join("")]);
-    }
-    return;
-  }
-
-  if ($("gradeLettersPanel").classList.contains("visible")) {
-    setHUD([gradeGender, gradeLength, gradeLetters.join("")]);
-    return;
-  }
-
-  /* ============================
-        LEXICON
-     ============================ */
-  if ($("lexiconVCPanel").classList.contains("visible")) {
-    if (lexStep === 1) {
-      setHUD([lexGender]);
-    } else if (lexStep === 2) {
-      setHUD([lexGender, lexBinPattern.join("")]);
-    }
-    return;
-  }
-
-  if (
-    $("lexiconVowelPanel").classList.contains("visible") ||
-    $("lexiconShapePanel").classList.contains("visible") ||
-    $("lexiconLetterPanel").classList.contains("visible") ||
-    $("lexiconBinaryPanel").classList.contains("visible")
-  ) {
-    setHUD([lexGender, lexBinPattern.join("")]);
-    return;
-  }
-
-  /* ============================
-        RESULTADOS
-     ============================ */
-  if ($("resultPanel").classList.contains("visible")) {
-    hud.innerHTML = "";
-    return;
-  }
+  hud.innerText = [g, len, letters].filter(Boolean).join("  ");
 }
+
 /* ============================================================
    HOME / MODO TREINO X PERFORMANCE
    ============================================================ */
@@ -222,14 +66,15 @@ function updateHomeUI() {
     hide("home-step1");
     show("home-step2");
   }
-}
-
-function goHome(forceStep1 = false) {
-  if (forceStep1) homeStep = 1;
+  // No home, HUD vazio
   hudGender = "";
   hudLength = "";
   hudLetters = "";
   updateHUD();
+}
+
+function goHome(forceStep1 = false) {
+  if (forceStep1) homeStep = 1;
   updateHomeUI();
 }
 
@@ -249,11 +94,10 @@ function setModePerformance() {
 
 /* ============================================================
    LISTA DE NOMES
-   Substitua RAW_NAMES pela sua lista completa
    ============================================================ */
 
 const RAW_NAMES = [
- "Abel - M",
+    "Abel - M",
   "Abigail - F",
   "Abílio - M",
   "Abimael - M",
@@ -2301,7 +2145,6 @@ const NAMES = RAW_NAMES.map(n => {
 function findApproxCandidates(gender, length, letters, pigFirstReal) {
   const win = 6; // range máximo pra frente
   const out = [];
-
   const input = letters.map(l => (l || "").toLowerCase());
 
   for (const n of NAMES) {
@@ -2346,16 +2189,13 @@ function findApproxCandidates(gender, length, letters, pigFirstReal) {
 function showResults(list) {
   openOnly("resultPanel");
   const box = $("resultBox");
+  if (!box) return;
 
   if (!list || list.length === 0) {
-    box.innerText = "Nenhum nome encontrado!";
+    box.textContent = "Nenhum nome encontrado!";
     return;
   }
-
-  box.innerText = list
-    .slice(0, 9)
-    .map(c => c.raw)
-    .join("\n");
+  box.textContent = list.map(e => e.raw).join("\n");
 }
 
 /* ============================================================
@@ -2369,12 +2209,16 @@ let swipeLetters = ["_", "_", "_"];
 let swipeLetterIndex = 0;
 let swipeLetterChar = "m";
 
-function updateSwipeLettersDisplay() {
-  const el = $("swipeLetters");
-  if (el) el.innerText = swipeLetters.join(" ");
+function updateSwipeHUD() {
+  hudGender = swipeGender;
+  hudLength = swipeLength;
+  hudLetters = swipeLetters.join("");
+  updateHUD();
 }
 
 function updateSwipeUI() {
+  // No modo treino, usamos as telas; no performance, o CSS esconde o conteúdo visual,
+  // mas o painel ainda existe e recebe os swipes.
   hide("swipe-step-gender");
   hide("swipe-step-length");
   hide("swipe-step-letters");
@@ -2385,14 +2229,13 @@ function updateSwipeUI() {
 
   const g = $("swipeGender");
   const l = $("swipeLength");
+  const lettersEl = $("swipeLetters");
+
   if (g) g.innerText = swipeGender;
   if (l) l.innerText = swipeLength;
-  updateSwipeLettersDisplay();
+  if (lettersEl) lettersEl.innerText = swipeLetters.join(" ");
 
-  hudGender = swipeGender;
-  hudLength = swipeLength;
-  hudLetters = swipeLetters.join("");
-  updateHUD();
+  updateSwipeHUD();
 }
 
 function startSwipe() {
@@ -2515,9 +2358,11 @@ let pigLetters = ["_", "_", "_"];
 let pigLetterIndex = 0;
 let pigLetterChar = "m";
 
-function updatePigLettersDisplay() {
-  const el = $("pigLetters");
-  if (el) el.innerText = pigLetters.join(" ");
+function updatePigHUD() {
+  hudGender = pigGender;
+  hudLength = pigLength;
+  hudLetters = pigLetters.join("");
+  updateHUD();
 }
 
 function updatePigUI() {
@@ -2531,14 +2376,13 @@ function updatePigUI() {
 
   const g = $("pigGender");
   const l = $("pigLength");
+  const lettersEl = $("pigLetters");
+
   if (g) g.innerText = pigGender;
   if (l) l.innerText = pigLength;
-  updatePigLettersDisplay();
+  if (lettersEl) lettersEl.innerText = pigLetters.join(" ");
 
-  hudGender = pigGender;
-  hudLength = pigLength;
-  hudLetters = pigLetters.join("");
-  updateHUD();
+  updatePigHUD();
 }
 
 function startPigback() {
@@ -2651,7 +2495,7 @@ function pigLeft() {
 })();
 
 /* ============================================================
-   GRADE MODE — (HUD + Swipe + Grade Direta)
+   GRADE MODE
    ============================================================ */
 
 let gradeStage = "gender";
@@ -2667,6 +2511,26 @@ function updateGradeHUD() {
   updateHUD();
 }
 
+function updateGradeUI() {
+  hide("grade-step-gender");
+  hide("grade-step-length");
+  hide("grade-step-summary");
+
+  if (gradeStage === "gender") show("grade-step-gender");
+  if (gradeStage === "length") show("grade-step-length");
+  // não usamos mais o summary, mas deixo aqui pra compatibilidade
+
+  const g = $("gradeGender");
+  const l = $("gradeLength");
+  const lettersEl = $("gradeLettersDisplay");
+
+  if (g) g.innerText = gradeGender;
+  if (l) l.innerText = gradeLength;
+  if (lettersEl) lettersEl.innerText = gradeLetters.join(" ");
+
+  updateGradeHUD();
+}
+
 function startGrade() {
   gradeStage = "gender";
   gradeGender = "M";
@@ -2675,77 +2539,65 @@ function startGrade() {
   gradeLetterIndex = 0;
 
   openOnly("gradeSetupPanel");
-  updateGradeHUD();
-}
-
-function openGradeLetters() {
-  const grid = $("gradeLetterGrid");
-  grid.innerHTML = "";
-
-  ALPHABET.toUpperCase().split("").forEach(L => {
-    const b = document.createElement("button");
-    b.innerText = L;
-    b.onclick = () => {
-      if (gradeLetterIndex >= 3) return;
-      gradeLetters[gradeLetterIndex++] = L;
-      updateGradeHUD();
-      if (gradeLetterIndex === 3) {
-        showResults(findApproxCandidates(gradeGender, gradeLength, gradeLetters, false));
-      }
-    };
-    grid.appendChild(b);
-  });
-
-  openOnly("gradeLettersPanel");
-  updateGradeHUD();
+  updateGradeUI();
 }
 
 function gradeUp() {
-  if (gradeStage === "gender") gradeGender = "M";
-  else gradeLength = Math.min(gradeLength + 1, 12);
-  updateGradeHUD();
+  if (gradeStage === "gender") {
+    gradeGender = "M";
+  } else if (gradeStage === "length") {
+    gradeLength = Math.min(gradeLength + 1, 12);
+  }
+  updateGradeUI();
 }
 
 function gradeDown() {
-  if (gradeStage === "gender") gradeGender = "F";
-  else gradeLength = Math.max(gradeLength - 1, 3);
-  updateGradeHUD();
+  if (gradeStage === "gender") {
+    gradeGender = "F";
+  } else if (gradeStage === "length") {
+    gradeLength = Math.max(gradeLength - 1, 3);
+  }
+  updateGradeUI();
 }
 
 function gradeRight() {
   if (gradeStage === "gender") {
     gradeStage = "length";
+    updateGradeUI();
+  } else if (gradeStage === "length") {
+    // direto pra grade
+    openGradeLetters();
   }
-  else if (gradeStage === "length") {
-    openGradeLetters(); // AGORA ABRE DIRETO A GRADE
-    return;
-  }
-
-  updateGradeHUD();
 }
 
 function gradeLeft() {
   if (gradeStage === "length") {
     gradeStage = "gender";
+    updateGradeUI();
   }
-  updateGradeHUD();
 }
 
-(function setupGrade() {
+(function setupGradeSetup() {
   const panel = $("gradeSetupPanel");
-  let sx = null, sy = null;
+  if (!panel) return;
+
+  let startX = null;
+  let startY = null;
 
   panel.addEventListener("touchstart", e => {
     if (e.touches.length === 1) {
-      sx = e.touches[0].clientX;
-      sy = e.touches[0].clientY;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
     }
   });
 
   panel.addEventListener("touchend", e => {
-    if (sx == null) return;
-    const dx = e.changedTouches[0].clientX - sx;
-    const dy = e.changedTouches[0].clientY - sy;
+    if (startX == null) return;
+
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    const dx = endX - startX;
+    const dy = endY - startY;
 
     if (Math.abs(dy) > Math.abs(dx)) {
       if (dy < -30) gradeUp();
@@ -2755,12 +2607,91 @@ function gradeLeft() {
       else if (dx < -30) gradeLeft();
     }
 
-    sx = sy = null;
+    startX = startY = null;
   });
 })();
 
+function openGradeLetters() {
+  const grid = $("gradeLetterGrid");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+  const letters = ALPHABET.toUpperCase().split("");
+
+  letters.forEach(L => {
+    const btn = document.createElement("button");
+    btn.innerText = L;
+    btn.onclick = () => {
+      if (gradeLetterIndex >= 3) return;
+      gradeLetters[gradeLetterIndex] = L;
+      gradeLetterIndex++;
+      updateGradeHUD();
+    };
+    grid.appendChild(btn);
+  });
+
+  gradeLetters = ["_", "_", "_"];
+  gradeLetterIndex = 0;
+  const disp = $("gradeLettersDisplay");
+  if (disp) disp.innerText = gradeLetters.join(" ");
+
+  openOnly("gradeLettersPanel");
+  updateGradeHUD();
+}
+
+// Swipe na grade para "descobrir nome" no modo performance
+(function setupGradeLettersSwipe() {
+  const panel = $("gradeLettersPanel");
+  if (!panel) return;
+
+  let startX = null;
+  let startY = null;
+
+  panel.addEventListener("touchstart", e => {
+    if (e.touches.length === 1) {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }
+  });
+
+  panel.addEventListener("touchend", e => {
+    if (startX == null) return;
+
+    const endX = e.changedTouches[0].clientX;
+    const dx = endX - startX;
+
+    if (dx > 30) {
+      gradeDiscover();
+    }
+
+    startX = startY = null;
+  });
+})();
+
+function resetGradeLetters() {
+  gradeLetters = ["_", "_", "_"];
+  gradeLetterIndex = 0;
+  updateGradeHUD();
+  const disp = $("gradeLettersDisplay");
+  if (disp) disp.innerText = gradeLetters.join(" ");
+}
+
+function gradeDiscover() {
+  if (gradeLetters.includes("_")) {
+    alert("Selecione 3 letras.");
+    return;
+  }
+  const c = findApproxCandidates(
+    gradeGender,
+    gradeLength,
+    gradeLetters,
+    false
+  );
+  showResults(c);
+}
+
 /* ============================================================
-   LEXICON — COMPLETO + INTELIGENTE + SWIPES
+   LEXICON (VC por swipe, perguntas iguais)
    ============================================================ */
 
 let lexGender = "M";
@@ -2777,6 +2708,29 @@ let lexCurrentPos = null;
 let lexBinaryQuestion = null;
 let lexStep = 1;
 
+function updateLexiconVCUI() {
+  if (lexStep === 1) {
+    show("lex-step1");
+    hide("lex-step2");
+  } else {
+    hide("lex-step1");
+    show("lex-step2");
+  }
+
+  const genderBtn = $("genderBtn");
+  const vcPrev = $("lexiconVCPreview");
+  const lenPrev = $("lexiconLengthPreview");
+
+  if (genderBtn) genderBtn.innerText = lexGender;
+  if (vcPrev) vcPrev.innerText = lexBinPattern.join("");
+  if (lenPrev) lenPrev.innerText = String(lexLength);
+
+  hudGender = lexGender;
+  hudLength = lexLength;
+  hudLetters = lexBinPattern.join("");
+  updateHUD();
+}
+
 function startLexicon() {
   lexGender = "M";
   lexBinPattern = [];
@@ -2790,220 +2744,251 @@ function startLexicon() {
   lexHypotheses = [];
   lexCurrentPos = null;
   lexBinaryQuestion = null;
-
   lexStep = 1;
 
-  hudGender = "M";
-  hudLength = 0;
-  hudLetters = "";
-  updateHUD();
-
   openOnly("lexiconVCPanel");
+  updateLexiconVCUI();
 }
 
-/* ---------------- SWIPES VC ---------------- */
-
-function lexSwipeUp() {
-  if (lexStep === 1) {
-    lexGender = "M";
-    hudGender = "M";
-    updateHUD();
-  } else if (lexStep === 2) {
-    lexBinPattern.push("1");
-    lexLength = lexBinPattern.length;
-    hudLength = lexLength;
-    hudLetters = lexBinPattern.join("");
-    updateHUD();
-  }
+function toggleGender() {
+  // usado no modo Treino (botão)
+  lexGender = lexGender === "M" ? "F" : "M";
+  updateLexiconVCUI();
 }
 
-function lexSwipeDown() {
-  if (lexStep === 1) {
-    lexGender = "F";
-    hudGender = "F";
-    updateHUD();
-  } else if (lexStep === 2) {
-    lexBinPattern.push("2");
-    lexLength = lexBinPattern.length;
-    hudLength = lexLength;
-    hudLetters = lexBinPattern.join("");
-    updateHUD();
-  }
+function lexiconGoToStep2() {
+  lexStep = 2;
+  updateLexiconVCUI();
 }
 
-function lexSwipeRight() {
-  if (lexStep === 1) {
-    lexStep = 2;
+function lexiconAddBit(bit) {
+  lexBinPattern.push(bit);
+  lexLength = lexBinPattern.length;
+  updateLexiconVCUI();
+}
+
+function lexiconSelectVC(kind) {
+  if (lexStep !== 2) return;
+  let bit = null;
+  if (kind === "UP") bit = "1";
+  if (kind === "DOWN") bit = "2";
+  if (!bit) return;
+  lexiconAddBit(bit);
+}
+
+function lexiconFinishVC() {
+  if (lexBinPattern.length === 0) {
+    alert("Faça pelo menos um swipe cima/baixo.");
     return;
   }
-  if (lexStep === 2) finishVC();
+
+  lexKnownShapes = {};
+  lexKnownLetters = {};
+  lexFirstVowelPos = null;
+  lexFirstVowelHalf = null;
+  lexHypotheses = buildInitialHypotheses();
+  lexCurrentPos = null;
+  lexBinaryQuestion = null;
+
+  if (lexHypotheses.length === 0) {
+    showResults([]);
+    return;
+  }
+
+  proceedNextLexiconQuestion();
 }
 
+// Swipes no Lexicon VC
 (function setupLexiconSwipe() {
   const panel = $("lexiconVCPanel");
-  let sx, sy;
+  if (!panel) return;
+
+  let startX = null;
+  let startY = null;
 
   panel.addEventListener("touchstart", e => {
-    sx = e.touches[0].clientX;
-    sy = e.touches[0].clientY;
+    if (e.touches.length === 1) {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }
   });
 
   panel.addEventListener("touchend", e => {
-    if (sx == null) return;
+    if (startX == null) return;
 
-    const dx = e.changedTouches[0].clientX - sx;
-    const dy = e.changedTouches[0].clientY - sy;
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    const dx = endX - startX;
+    const dy = endY - startY;
 
     if (Math.abs(dy) > Math.abs(dx)) {
-      if (dy < -30) lexSwipeUp();
-      else if (dy > 30) lexSwipeDown();
+      if (dy < -30) {
+        // swipe up
+        if (lexStep === 1) {
+          lexGender = "M";
+          updateLexiconVCUI();
+        } else if (lexStep === 2) {
+          lexiconSelectVC("UP");
+        }
+      } else if (dy > 30) {
+        // swipe down
+        if (lexStep === 1) {
+          lexGender = "F";
+          updateLexiconVCUI();
+        } else if (lexStep === 2) {
+          lexiconSelectVC("DOWN");
+        }
+      }
     } else {
-      if (dx > 30) lexSwipeRight();
+      if (dx > 30) {
+        // swipe right
+        if (lexStep === 1) {
+          lexiconGoToStep2();
+        } else if (lexStep === 2) {
+          lexiconFinishVC();
+        }
+      }
     }
 
-    sx = sy = null;
+    startX = startY = null;
   });
 })();
-/* ============================================================
-   LEXICON — BUILD INITIAL HYPOTHESES
-   ============================================================ */
+
+/* Helpers Lexicon */
+
+function letterShape(ch) {
+  ch = ch.toLowerCase();
+  const curves = "cgoqsu";
+  const mixed = "bdjpr";
+  if (curves.includes(ch)) return "C";
+  if (mixed.includes(ch)) return "M";
+  return "R";
+}
+
+function firstVowelIndex(clean) {
+  for (let i = 0; i < clean.length; i++) {
+    if ("aeiou".includes(clean[i])) return i;
+  }
+  return -1;
+}
+
+function patternMatches(clean, pattern, map) {
+  for (let i = 0; i < pattern.length; i++) {
+    const bit = pattern[i];
+    const expected = map[bit];
+    const isVowel = "aeiou".includes(clean[i]);
+    if (expected === "V" && !isVowel) return false;
+    if (expected === "C" && isVowel) return false;
+  }
+  return true;
+}
 
 function buildInitialHypotheses() {
-  const base = NAMES.filter(n =>
-    n.gender === lexGender &&
-    n.clean.length === lexLength
+  const base = NAMES.filter(
+    n => n.gender === lexGender && n.clean.length === lexLength
   );
-
-  // Dois possíveis mapas VC:
-  // Padrão 1 → 1 = Vogal, 2 = Consoante
-  // Padrão 2 → 1 = Consoante, 2 = Vogal
-  const MAP1 = { "1": "V", "2": "C" };
-  const MAP2 = { "1": "C", "2": "V" };
-
-  function matchesPattern(clean, pattern, map) {
-    for (let i = 0; i < pattern.length; i++) {
-      const bit = pattern[i];
-      const want = map[bit];
-      const isVowel = "aeiou".includes(clean[i]);
-
-      if (want === "V" && !isVowel) return false;
-      if (want === "C" && isVowel) return false;
-    }
-    return true;
-  }
-
+  const H1 = { "1": "V", "2": "C" };
+  const H2 = { "1": "C", "2": "V" };
   const list = [];
 
-  const group1 = base.filter(n => matchesPattern(n.clean, lexBinPattern, MAP1));
-  if (group1.length) list.push({ map: MAP1, candidates: group1 });
+  const c1 = base.filter(n => patternMatches(n.clean, lexBinPattern, H1));
+  if (c1.length > 0) list.push({ map: H1, candidates: c1 });
 
-  const group2 = base.filter(n => matchesPattern(n.clean, lexBinPattern, MAP2));
-  if (group2.length) list.push({ map: MAP2, candidates: group2 });
+  const c2 = base.filter(n => patternMatches(n.clean, lexBinPattern, H2));
+  if (c2.length > 0) list.push({ map: H2, candidates: c2 });
 
   return list;
 }
 
-/* ---------------- FINALIZA VC ---------------- */
+function applyShapeLetterVowelFilters(cands) {
+  let result = cands.slice();
 
-function finishVC() {
-  if (lexBinPattern.length === 0) return;
-  lexHypotheses = buildInitialHypotheses();
-  if (lexHypotheses.length === 0) return showResults([]);
-  proceedNextLexQuestion();
-}
-
-/* ---------------- PERGUNTAS ---------------- */
-
-function reduceHypotheses() {
-  const newList = [];
-  for (const h of lexHypotheses) {
-    const filtered = applyLexFilters(h.candidates);
-    if (filtered.length) newList.push({ map: h.map, candidates: filtered });
+  for (const posStr in lexKnownShapes) {
+    const pos = parseInt(posStr);
+    const target = lexKnownShapes[pos];
+    result = result.filter(c => letterShape(c.clean[pos]) === target);
   }
-  lexHypotheses = newList;
-}
 
-function applyLexFilters(list) {
-  let r = list.slice();
-
-  for (const pos in lexKnownShapes)
-    r = r.filter(c => letterShape(c.clean[pos]) === lexKnownShapes[pos]);
-
-  for (const pos in lexKnownLetters)
-    r = r.filter(c => c.clean[pos] === lexKnownLetters[pos]);
+  for (const posStr in lexKnownLetters) {
+    const pos = parseInt(posStr);
+    const target = lexKnownLetters[pos];
+    result = result.filter(c => c.clean[pos] === target);
+  }
 
   if (lexFirstVowelPos !== null)
-    r = r.filter(c => firstVowelIndex(c.clean) === lexFirstVowelPos);
+    result = result.filter(
+      c => firstVowelIndex(c.clean) === lexFirstVowelPos
+    );
 
   if (lexFirstVowelHalf) {
     const half = lexFirstVowelHalf.half;
     const thr = half - 1;
     const wantBefore = lexFirstVowelHalf.isBefore;
 
-    r = r.filter(c => {
+    result = result.filter(c => {
       const idx = firstVowelIndex(c.clean);
       if (idx < 0) return false;
-      return (idx <= thr) === wantBefore;
+      const isBefore = idx <= thr;
+      return isBefore === wantBefore;
     });
   }
-  return r;
+
+  return result;
 }
 
-function allCandidates() {
+function filterAllHypotheses() {
+  const newList = [];
+  for (const h of lexHypotheses) {
+    const f = applyShapeLetterVowelFilters(h.candidates);
+    if (f.length > 0)
+      newList.push({ map: h.map, candidates: f });
+  }
+  lexHypotheses = newList;
+}
+
+function getAllCandidates() {
   const map = new Map();
-  for (const h of lexHypotheses)
-    for (const c of h.candidates)
-      map.set(c.raw, c);
+  for (const h of lexHypotheses) {
+    for (const c of h.candidates) {
+      const key = c.raw + "|" + c.gender;
+      if (!map.has(key)) map.set(key, c);
+    }
+  }
   return Array.from(map.values());
 }
 
-/* ============================================================
-   LEXICON — PERGUNTA OTIMIZADA
-   ============================================================ */
+function lexiconAnswerBinary(isYes) {
+  if (!lexBinaryQuestion) return;
 
-function proceedNextLexQuestion() {
-  // Reduz hipóteses primeiro
-  reduceHypotheses();
-  const all = allCandidates();
-
-  // ------------------------------------------------------------
-  // 1. Se não há candidatos → encerra
-  // ------------------------------------------------------------
-  if (all.length === 0) {
-    return showResults([]);
+  if (lexBinaryQuestion.kind === "firstVowelHalf") {
+    lexFirstVowelHalf = {
+      half: lexBinaryQuestion.half,
+      isBefore: isYes
+    };
   }
 
-  // ------------------------------------------------------------
-  // Verifica se já fizemos pelo menos uma pergunta
-  // ------------------------------------------------------------
-  const alreadyFiltered =
-    Object.keys(lexKnownShapes).length > 0 ||
-    Object.keys(lexKnownLetters).length > 0 ||
-    lexFirstVowelPos !== null ||
-    lexFirstVowelHalf !== null;
+  lexBinaryQuestion = null;
+  proceedNextLexiconQuestion();
+}
 
-  // ------------------------------------------------------------
-  // 2. Lógica de parada inteligente
-  //    - sem perguntas → ok parar com ≤ 9 nomes
-  //    - já com perguntas → só parar com ≤ 5 nomes
-  // ------------------------------------------------------------
+function proceedNextLexiconQuestion() {
+  filterAllHypotheses();
+  const all = getAllCandidates();
+  const total = all.length;
 
-  if (!alreadyFiltered && all.length <= 9) {
-    return showResults(all);
+  if (total === 0) {
+    showResults([]);
+    return;
   }
 
-  if (alreadyFiltered && all.length <= 5) {
-    return showResults(all);
+  if (total <= 9) {
+    showResults(all);
+    return;
   }
 
-  // ------------------------------------------------------------
-  // GERAR LISTA DE PERGUNTAS POSSÍVEIS
-  // ------------------------------------------------------------
   const questions = [];
 
-  /* ============================================================
-     1) PRIMEIRA VOGAL — pergunta mais forte
-     ============================================================ */
+  /* 1) posição da 1ª vogal */
   if (lexFirstVowelPos === null) {
     const counts = {};
     all.forEach(c => {
@@ -3011,359 +2996,141 @@ function proceedNextLexQuestion() {
       if (idx >= 0) counts[idx] = (counts[idx] || 0) + 1;
     });
 
-    const vowelPositions = Object.keys(counts).map(Number);
-    if (vowelPositions.length >= 2) {
-      questions.push({
-        kind: "firstVowelPos",
-        positions: vowelPositions.sort((a, b) => a - b)
-      });
+    const keys = Object.keys(counts);
+    if (keys.length >= 2) {
+      questions.push({ kind: "firstVowelPos" });
     }
   }
 
-  /* ============================================================
-     2) LETRA EXATA — maior entropia
-     ============================================================ */
-  let bestLetterPos = null;
-  let bestLetterEntropy = 0;
+  /* 2) shape por posição */
+  let bestShape = null;
+  for (let i = 0; i < lexLength; i++) {
+    if (lexKnownShapes[i] || lexKnownLetters[i]) continue;
 
-  for (let pos = 0; pos < lexLength; pos++) {
-    if (lexKnownLetters[pos]) continue;
+    const shapes = new Set();
+    all.forEach(c => shapes.add(letterShape(c.clean[i])));
 
-    const set = new Set(all.map(c => c.clean[pos]));
-    if (set.size <= 1) continue;
-
-    if (set.size > bestLetterEntropy) {
-      bestLetterEntropy = set.size;
-      bestLetterPos = pos;
+    if (shapes.size >= 2) {
+      bestShape = { kind: "shape", pos: i };
+      break;
     }
   }
+  if (bestShape) questions.push(bestShape);
 
-  if (bestLetterPos !== null) {
+  /* 3) letra exata */
+  let bestLetter = null;
+  for (let i = 0; i < lexLength; i++) {
+    if (lexKnownLetters[i]) continue;
+
+    const chars = new Set();
+    all.forEach(c => chars.add(c.clean[i]));
+
+    if (chars.size >= 2) {
+      bestLetter = { kind: "letter", pos: i };
+      break;
+    }
+  }
+  if (bestLetter) questions.push(bestLetter);
+
+  /* 4) metade da palavra */
+  if (!lexFirstVowelHalf) {
+    const half = Math.ceil(lexLength / 2);
     questions.push({
-      kind: "letterExact",
-      pos: bestLetterPos
+      kind: "firstVowelHalf",
+      half
     });
   }
 
-  /* ============================================================
-     3) SHAPE (R / C / M)
-     ============================================================ */
-  let bestShapePos = null;
-  let bestShapeEntropy = 0;
-
-  for (let pos = 0; pos < lexLength; pos++) {
-    if (lexKnownShapes[pos] || lexKnownLetters[pos]) continue;
-
-    const set = new Set(all.map(c => letterShape(c.clean[pos])));
-    if (set.size <= 1) continue;
-
-    if (set.size > bestShapeEntropy) {
-      bestShapeEntropy = set.size;
-      bestShapePos = pos;
-    }
+  if (!questions.length) {
+    showResults(all.slice(0, 9));
+    return;
   }
 
-  if (bestShapePos !== null) {
-    questions.push({
-      kind: "shape",
-      pos: bestShapePos
-    });
-  }
+  const q = questions[0];
 
-  /* ============================================================
-     Nenhuma pergunta possível → mostrar resultado
-     ============================================================ */
-  if (questions.length === 0) {
-    return showResults(all.slice(0, 5));
-  }
-
-  /* ============================================================
-     PRIORIDADE:
-     1) firstVowelPos
-     2) letterExact
-     3) shape
-     ============================================================ */
-
-  let q = null;
-
-  q = questions.find(x => x.kind === "firstVowelPos")
-    || questions.find(x => x.kind === "letterExact")
-    || questions[0];
-
-  /* ============================================================
-     EXECUÇÃO DA PERGUNTA
-     ============================================================ */
-
-  // --- Pergunta: posição da primeira vogal ---
   if (q.kind === "firstVowelPos") {
-    const grid = $("vowelPosGrid");
-    grid.innerHTML = "";
-
-    q.positions.forEach(pos => {
-      const b = document.createElement("button");
-      b.textContent = pos + 1;
-      b.onclick = () => {
-        lexFirstVowelPos = pos;
-        proceedNextLexQuestion();
-      };
-      grid.appendChild(b);
-    });
-
-    return openOnly("lexiconVowelPanel");
+    openOnly("lexiconVowelPanel");
+    return;
   }
 
-  // --- Pergunta: letra exata ---
-  if (q.kind === "letterExact") {
-    lexCurrentPos = q.pos;
-    $("lexiconLetterPos").innerText = q.pos + 1;
-    buildLexiconLetterGrid();
-    return openOnly("lexiconLetterPanel");
-  }
-
-  // --- Pergunta: shape ---
   if (q.kind === "shape") {
     lexCurrentPos = q.pos;
     $("lexiconShapePos").innerText = q.pos + 1;
-    return openOnly("lexiconShapePanel");
+    openOnly("lexiconShapePanel");
+    return;
   }
+
+  if (q.kind === "letter") {
+    lexCurrentPos = q.pos;
+    $("lexiconLetterPos").innerText = q.pos + 1;
+    buildLexiconLetterGrid();
+    openOnly("lexiconLetterPanel");
+    return;
+  }
+
+  if (q.kind === "firstVowelHalf") {
+    lexBinaryQuestion = q;
+    $("lexiconBinaryText").innerText =
+      `1ª vogal ≤ ${q.half}?`;
+    openOnly("lexiconBinaryPanel");
+    return;
+  }
+
+  showResults(all.slice(0, 9));
 }
 
-/* ============================================================
-   RESPOSTAS DAS PERGUNTAS
-   ============================================================ */
-
-function letterShape(ch) {
-  ch = ch.toLowerCase();
-  if ("cgoqsu".includes(ch)) return "C";
-  if ("bdjpr".includes(ch)) return "M";
-  return "R";
-}
-
-function firstVowelIndex(s) {
-  for (let i = 0; i < s.length; i++)
-    if ("aeiou".includes(s[i])) return i;
-  return -1;
-}
+(function buildVowelPosGrid() {
+  const grid = $("vowelPosGrid");
+  if (!grid) return;
+  grid.innerHTML = "";
+  for (let i = 1; i <= 12; i++) {
+    const btn = document.createElement("button");
+    btn.innerText = i;
+    btn.onclick = () => {
+      lexFirstVowelPos = i - 1;
+      proceedNextLexiconQuestion();
+    };
+    grid.appendChild(btn);
+  }
+})();
 
 function lexiconAnswerShape(shape) {
+  if (lexCurrentPos === null) return;
   lexKnownShapes[lexCurrentPos] = shape;
   lexCurrentPos = null;
-  proceedNextLexQuestion();
+  proceedNextLexiconQuestion();
 }
 
 function buildLexiconLetterGrid() {
   const grid = $("lexiconLetterGrid");
+  if (!grid) return;
   grid.innerHTML = "";
-
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(L => {
-    const b = document.createElement("button");
-    b.innerText = L;
-    b.onclick = () => {
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  letters.forEach(L => {
+    const btn = document.createElement("button");
+    btn.innerText = L;
+    btn.onclick = () => {
+      if (lexCurrentPos === null) return;
       lexKnownLetters[lexCurrentPos] = L.toLowerCase();
       lexCurrentPos = null;
-      proceedNextLexQuestion();
+      proceedNextLexiconQuestion();
     };
-    grid.appendChild(b);
+    grid.appendChild(btn);
   });
 }
 
-function lexiconAnswerBinary(yes) {
-  if (!lexBinaryQuestion) return;
-  lexFirstVowelHalf = { half: lexBinaryQuestion.half, isBefore: yes };
-  lexBinaryQuestion = null;
-  proceedNextLexQuestion();
-}
-
-
 /* ============================================================
-   GESTOS GLOBAIS PARA PERFORMANCE
+   GESTO GLOBAL: 2 DEDOS = VOLTAR PRA HOME
    ============================================================ */
 
-document.addEventListener("touchstart", function (e) {
-  // Detectar dois dedos
-  if (document.body.classList.contains("performance")) {
-    if (e.touches.length === 2) {
-      // Dois dedos tocados: registrar posição inicial
-      window._twoFingerStartY = e.touches[0].clientY;
-    }
-
-    // Swipe para voltar etapa no modo atual
-    if (e.touches.length === 1) {
-      window._oneFingerStartX = e.touches[0].clientX;
-    }
+document.addEventListener("touchstart", e => {
+  if (e.touches.length === 2) {
+    goHome(true);
   }
 });
 
-document.addEventListener("touchend", function (e) {
-  if (!document.body.classList.contains("performance")) return;
+/* Estado inicial */
 
-  /* ===============================================
-     1) DOIS DEDOS → VOLTA PARA A ESCOLHA DO MODO
-     =============================================== */
-  if (window._twoFingerStartY !== undefined && e.changedTouches.length > 0) {
-    const endY = e.changedTouches[0].clientY;
-    const diffY = endY - window._twoFingerStartY;
-
-    if (diffY > 40) {
-      // Volta para seleção de performance
-      homeStep = 2;
-      openOnly("home");
-      show("home-step2");
-    }
-
-    window._twoFingerStartY = undefined;
-  }
-
-  /* ===============================================
-     2) SWIPE PARA ESQUERDA → VOLTAR UMA ETAPA
-     =============================================== */
-  if (window._oneFingerStartX !== undefined) {
-    const endX = e.changedTouches[0].clientX;
-    const diffX = endX - window._oneFingerStartX;
-
-    if (diffX < -40) {
-      goBackOneStep();
-    }
-    window._oneFingerStartX = undefined;
-  }
-});
-
-/* ============================================================
-   FUNÇÃO: VOLTAR UMA ETAPA EM QUALQUER MODO
-   ============================================================ */
-function goBackOneStep() {
-
-  /* -------------- SWIPE MODE -------------- */
-  if ($("#swipePanel").classList.contains("visible")) {
-    if (swipeStage === "letters") {
-      swipeStage = "length";
-      swipeLetterIndex = 0;
-      openOnly("swipePanel");
-      $("#swipe-step-gender").style.display = "none";
-      $("#swipe-step-length").style.display = "";
-      $("#swipe-step-letters").style.display = "none";
-      updateHUD();
-      return;
-    }
-    if (swipeStage === "length") {
-      swipeStage = "gender";
-      openOnly("swipePanel");
-      $("#swipe-step-gender").style.display = "";
-      $("#swipe-step-length").style.display = "none";
-      $("#swipe-step-letters").style.display = "none";
-      updateHUD();
-      return;
-    }
-    if (swipeStage === "gender") {
-      homeStep = 2;
-      openOnly("home");
-      show("home-step2");
-      return;
-    }
-  }
-
-  /* -------------- PIGBACK MODE -------------- */
-  if ($("#pigbackPanel").classList.contains("visible")) {
-    if (pigStage === "letters") {
-      pigStage = "length";
-      openOnly("pigbackPanel");
-      $("#pig-step-gender").style.display = "none";
-      $("#pig-step-length").style.display = "";
-      $("#pig-step-letters").style.display = "none";
-      updateHUD();
-      return;
-    }
-    if (pigStage === "length") {
-      pigStage = "gender";
-      openOnly("pigbackPanel");
-      $("#pig-step-gender").style.display = "";
-      $("#pig-step-length").style.display = "none";
-      $("#pig-step-letters").style.display = "none";
-      updateHUD();
-      return;
-    }
-    if (pigStage === "gender") {
-      homeStep = 2;
-      openOnly("home");
-      show("home-step2");
-      return;
-    }
-  }
-
-  /* -------------- GRADE MODE -------------- */
-  if ($("#gradeSetupPanel").classList.contains("visible")) {
-    if (gradeStage === "length") {
-      gradeStage = "gender";
-      openOnly("gradeSetupPanel");
-      $("#grade-step-gender").style.display = "";
-      $("#grade-step-length").style.display = "none";
-      updateHUD();
-      return;
-    }
-    if (gradeStage === "gender") {
-      homeStep = 2;
-      openOnly("home");
-      show("home-step2");
-      return;
-    }
-  }
-
-  /* -------------- GRADE GRID -------------- */
-  if ($("#gradeLettersPanel").classList.contains("visible")) {
-    // volta para tamanho
-    gradeStage = "length";
-    openOnly("gradeSetupPanel");
-    $("#grade-step-gender").style.display = "none";
-    $("#grade-step-length").style.display = "";
-    updateHUD();
-    return;
-  }
-
-  /* -------------- LEXICON VC -------------- */
-  if ($("#lexiconVCPanel").classList.contains("visible")) {
-    if (lexStep === 2) {
-      lexStep = 1;
-      $("#lex-step1").style.display = "";
-      $("#lex-step2").style.display = "none";
-      updateHUD();
-      return;
-    }
-    if (lexStep === 1) {
-      homeStep = 2;
-      openOnly("home");
-      show("home-step2");
-      return;
-    }
-  }
-
-  /* -------------- LEXICON PERGUNTAS -------------- */
-  if (
-    $("#lexiconVowelPanel").classList.contains("visible") ||
-    $("#lexiconShapePanel").classList.contains("visible") ||
-    $("#lexiconLetterPanel").classList.contains("visible") ||
-    $("#lexiconBinaryPanel").classList.contains("visible")
-  ) {
-    // volta para o VC
-    openOnly("lexiconVCPanel");
-    $("#lex-step1").style.display = "none";
-    $("#lex-step2").style.display = "";
-    updateHUD();
-    return;
-  }
-
-  /* -------------- RESULTADOS -------------- */
-  if ($("#resultPanel").classList.contains("visible")) {
-    homeStep = 2;
-    openOnly("home");
-    show("home-step2");
-    return;
-  }
-}
-window.addEventListener("load", async () => {
-  try {
-    await validateLicenseOrDie();
-    iniciarAxis();
-  } catch (err) {
-    console.error("Falha de licença:", err);
-  }
-});
+document.addEventListener("DOMContentLoaded", () => {
+  updateHomeUI();
+})
