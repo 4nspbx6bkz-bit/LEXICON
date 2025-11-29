@@ -1,4 +1,15 @@
-/* ============================================================
+async function validateLicense(licenseKey) {
+  try {
+    const response = await fetch(
+      `https://axislicense.d2bz92x2cp.workers.dev/check?key=${licenseKey}`
+    );
+    const data = await response.json();
+    return data.valid === true;
+  } catch (err) {
+    console.error("Erro ao validar a licença:", err);
+    return false;
+  }
+}/* ============================================================
    AXIS – Nomes Mágicos
    Swipe / Pigbacking / Grade / Lexicon (simples)
    ============================================================ */
