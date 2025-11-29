@@ -183,6 +183,61 @@ if (location.protocol === "https:" || location.protocol === "http:") {
   <pre id="resultBox" class="result-box"></pre>
 </div>
 
+  <script>
+(async function () {
+  const STORAGE_KEY = "axis_license_code_v1";
+
+  // 1. Tenta pegar do localStorage
+  let license = localStorage.getItem(STORAGE_KEY);
+
+  // 2. Se não existir, pega da URL
+  if (!license) {
+    const params = new URLSearchParams(location.search);
+    const urlLicense = params.get("license");
+
+    if (urlLicense) {
+      console.log("Salvando licença no localStorage:", urlLicense);
+      localStorage.setItem(STORAGE_KEY, urlLicense);
+      license = urlLicense;
+    }
+  }
+
+  // 3. Se ainda não tiver → bloqueia
+  if (!license) {
+    document.body.innerHTML = `
+      <div style="padding:40px; font-family:-apple-system; text-align:center; color:white;">
+        <h1>AXIS – Licença necessária</h1>
+        <p>Este dispositivo não possui uma licença válida.</p>
+      </div>`;
+    return;
+  }
+
+  // 4. Valida no Worker
+  try {
+    const res = await fetch("https://axislicense.d2bz92x2cp.workers.dev/check?key=" + license);
+    const data = await res.json();
+
+    if (!data.valid) {
+      document.body.innerHTML = `
+        <div style="padding:40px; font-family:-apple-system; text-align:center; color:white;">
+          <h1>AXIS – Acesso negado</h1>
+          <p>Licença inválida.</p>
+        </div>`;
+      return;
+    }
+
+    console.log("LICENÇA OK:", data);
+    // Agora o script_v2.js pode carregar normalmente
+
+  } catch (e) {
+    document.body.innerHTML = `
+      <div style="padding:40px; font-family:-apple-system; text-align:center; color:white;">
+        <h1>Erro ao validar licença</h1>
+        <p>Verifique sua conexão.</p>
+      </div>`;
+  }
+})();
+</script>
  <script src="script_v2.js"></script>
 <!-- HUD -->
 <div id="hud"></div>
