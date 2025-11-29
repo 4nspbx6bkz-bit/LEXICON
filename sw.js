@@ -1,22 +1,16 @@
-self.addEventListener("install", (e) => {
-  console.log("SW instalado");
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
-self.addEventListener("activate", (e) => {
-  console.log("SW ativado");
-  return self.clients.claim();
+self.addEventListener("activate", event => {
+  event.waitUntil(clients.claim());
 });
 
-self.addEventListener("fetch", (event) => {
-  event.respondWith(
-    caches.open("axis-cache").then((cache) =>
-      fetch(event.request)
-        .then((response) => {
-          cache.put(event.request, response.clone());
-          return response;
-        })
-        .catch(() => cache.match(event.request))
-    )
-  );
+// NUNCA CACHEAR HTML/JS (pois causa erro de versão)
+self.addEventListener("fetch", event => {
+  const req = event.request;
+  const url = new URL(req.url);
+
+  // Sempre busca online
+  event.respondWith(fetch(req).catch(() => null));
 });
