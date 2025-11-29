@@ -3134,67 +3134,70 @@ document.addEventListener("touchstart", e => {
 document.addEventListener("DOMContentLoaded", () => {
   updateHomeUI();
 })
-// ======================= LICENÇA AXIS (WORKER FINAL) ===========================
+// ======================= LICENÇA AXIS – COMPATÍVEL COM PWA ===========================
 async function validateLicenseOrDie() {
   const STORAGE_KEY = "axis_license_code_v1";
 
+  // 1. Primeiro tenta o localStorage (PWA vai cair aqui!)
   let license = localStorage.getItem(STORAGE_KEY);
 
-  // 1. Tenta pegar via URL
+  // 2. Se não tiver, tenta via URL (só na primeira abertura pelo Safari)
   if (!license) {
     const params = new URLSearchParams(window.location.search);
     license = params.get("license");
+
+    // Se veio pela URL → salvar AGORA, antes de qualquer reload / PWA
+    if (license) {
+      localStorage.setItem(STORAGE_KEY, license);
+    }
   }
 
-  // 2. Se não tiver → bloquear
+  // 3. Se não achar de jeito nenhum → bloquear
   if (!license) {
     document.body.innerHTML = `
       <div style="padding:40px; font-family: -apple-system, system-ui, sans-serif; text-align:center; background:black; color:white;">
         <h1>AXIS – Licença necessária</h1>
         <p>Este dispositivo não possui uma licença válida.</p>
-        <p>Use o link oficial enviado pelo Dr. Arthur.</p>
+        <p>Abra o link oficial com o parâmetro ?license=...</p>
       </div>
     `;
     throw new Error("No license code found");
   }
 
-  // 3. Salva para próximas aberturas
-  localStorage.setItem(STORAGE_KEY, license);
-
-  // 4. Valida no WORKER QUE JÁ FUNCIONA
+  // 4. Validação no seu Worker
   const url = `https://axislicense.d2bz92x2cp.workers.dev/check?key=${encodeURIComponent(license)}`;
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: "no-store" });
     const data = await res.json();
 
     if (!data.valid) {
       document.body.innerHTML = `
         <div style="padding:40px; font-family: -apple-system, system-ui, sans-serif; text-align:center; background:black; color:white;">
           <h1>AXIS – Acesso negado</h1>
-          <p>Licença inválida ou já utilizada em outro aparelho.</p>
+          <p>Licença inválida ou já utilizada.</p>
         </div>
       `;
       throw new Error("Invalid license");
     }
 
-    console.log("Licença válida:", data.device);
+    console.log("Licença válida. Device:", data.device);
     return true;
 
   } catch (err) {
-    console.error(err);
+    console.error("License error:", err);
     document.body.innerHTML = `
       <div style="padding:40px; font-family: -apple-system, system-ui, sans-serif; text-align:center; background:black; color:white;">
         <h1>Erro ao validar licença</h1>
-        <p>Cheque sua conexão com a internet.</p>
+        <p>Verifique sua conexão.</p>
       </div>
     `;
     throw err;
   }
 }
-// Delay para evitar bloqueios do GitHub Pages / iOS
+
 const LICENSE_DELAY = 300;
-// INICIAR SOMENTE DEPOIS DA LICENÇA — COM DELAY DE 300ms
+
 window.addEventListener("load", () => {
   setTimeout(async () => {
     try {
