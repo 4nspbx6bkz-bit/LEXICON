@@ -1,0 +1,22 @@
+{
+  "name": "AXIS",
+  "short_name": "AXIS",
+  "start_url": "/LEXICON/?source=pwa",
+  "scope": "/LEXICON/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "description": "AXIS — Ferramenta Profissional de Mentalismo",
+  "icons": [
+    {
+      "src": "icon192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
