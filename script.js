@@ -3134,3 +3134,71 @@ document.addEventListener("touchstart", e => {
 document.addEventListener("DOMContentLoaded", () => {
   updateHomeUI();
 })
+// ======================= LICENÇA AXIS (WORKER FINAL) ===========================
+async function validateLicenseOrDie() {
+  const STORAGE_KEY = "axis_license_code_v1";
+
+  let license = localStorage.getItem(STORAGE_KEY);
+
+  // 1. Tenta pegar via URL
+  if (!license) {
+    const params = new URLSearchParams(window.location.search);
+    license = params.get("license");
+  }
+
+  // 2. Se não tiver → bloquear
+  if (!license) {
+    document.body.innerHTML = `
+      <div style="padding:40px; font-family: -apple-system, system-ui, sans-serif; text-align:center; background:black; color:white;">
+        <h1>AXIS – Licença necessária</h1>
+        <p>Este dispositivo não possui uma licença válida.</p>
+        <p>Use o link oficial enviado pelo Dr. Arthur.</p>
+      </div>
+    `;
+    throw new Error("No license code found");
+  }
+
+  // 3. Salva para próximas aberturas
+  localStorage.setItem(STORAGE_KEY, license);
+
+  // 4. Valida no WORKER QUE JÁ FUNCIONA
+  const url = `https://axislicense.d2bz92x2cp.workers.dev/check?key=${encodeURIComponent(license)}`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.valid) {
+      document.body.innerHTML = `
+        <div style="padding:40px; font-family: -apple-system, system-ui, sans-serif; text-align:center; background:black; color:white;">
+          <h1>AXIS – Acesso negado</h1>
+          <p>Licença inválida ou já utilizada em outro aparelho.</p>
+        </div>
+      `;
+      throw new Error("Invalid license");
+    }
+
+    console.log("Licença válida:", data.device);
+    return true;
+
+  } catch (err) {
+    console.error(err);
+    document.body.innerHTML = `
+      <div style="padding:40px; font-family: -apple-system, system-ui, sans-serif; text-align:center; background:black; color:white;">
+        <h1>Erro ao validar licença</h1>
+        <p>Cheque sua conexão com a internet.</p>
+      </div>
+    `;
+    throw err;
+  }
+}
+
+// INICIAR SOMENTE DEPOIS DA LICENÇA
+window.addEventListener("load", async () => {
+  try {
+    await validateLicenseOrDie();
+    console.log("AXIS iniciado.");
+  } catch (err) {
+    console.error("Falha de licença:", err);
+  }
+});
