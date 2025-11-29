@@ -1,15 +1,4 @@
-async function validateLicense(licenseKey) {
-  try {
-    const response = await fetch(
-      `https://axislicense.d2bz92x2cp.workers.dev/check?key=${licenseKey}`
-    );
-    const data = await response.json();
-    return data.valid === true;
-  } catch (err) {
-    console.error("Erro ao validar a licença:", err);
-    return false;
-  }
-}/* ============================================================
+/* ============================================================
    AXIS – Nomes Mágicos
    Swipe / Pigbacking / Grade / Lexicon (simples)
    ============================================================ */
@@ -47,17 +36,19 @@ function openOnly(id) {
   updateHUD(); // sempre atualiza HUD quando troca painel
 }
 
-// ======================= LICENÇA AXIS ===========================
+// ======================= LICENÇA AXIS (WORKER FINAL) ===========================
 async function validateLicenseOrDie() {
   const STORAGE_KEY = "axis_license_code_v1";
 
   let license = localStorage.getItem(STORAGE_KEY);
 
+  // 1. Tenta pegar via URL
   if (!license) {
     const params = new URLSearchParams(window.location.search);
     license = params.get("license");
   }
 
+  // 2. Se não tiver → bloquear
   if (!license) {
     document.body.innerHTML = `
       <div style="padding:40px; font-family: -apple-system, system-ui, sans-serif; text-align:center; background:black; color:white;">
@@ -69,47 +60,42 @@ async function validateLicenseOrDie() {
     throw new Error("No license code found");
   }
 
+  // 3. Salva para próximas aberturas
   localStorage.setItem(STORAGE_KEY, license);
 
-  const apiBase = "https://lexicon.4nspbx6bkz.workers.dev";
-  const url = `${apiBase}/check?license=${encodeURIComponent(license)}`;
+  // 4. Valida no WORKER QUE JÁ FUNCIONA
+  const url = `https://axislicense.d2bz92x2cp.workers.dev/check?key=${encodeURIComponent(license)}`;
 
   try {
     const res = await fetch(url);
     const data = await res.json();
 
     if (!data.valid) {
-      let msg = "Licença inválida ou já utilizada em outro aparelho.";
-
-      if (data.reason === "license_not_found") {
-        msg = "Este código de licença não existe.";
-      }
-
-      if (data.reason === "different_device") {
-        msg = "Esta licença já foi ativada em outro aparelho.";
-      }
-
       document.body.innerHTML = `
         <div style="padding:40px; font-family: -apple-system, system-ui, sans-serif; text-align:center; background:black; color:white;">
           <h1>AXIS – Acesso negado</h1>
-          <p>${msg}</p>
+          <p>Licença inválida ou já utilizada em outro aparelho.</p>
         </div>
       `;
-      throw new Error("License not valid");
+      throw new Error("Invalid license");
     }
 
-    console.log("Licença AXIS OK:", data);
+    console.log("Licença válida:", data.device);
+    return true;
 
   } catch (err) {
     console.error(err);
     document.body.innerHTML = `
       <div style="padding:40px; font-family: -apple-system, system-ui, sans-serif; text-align:center; background:black; color:white;">
         <h1>Erro ao validar licença</h1>
-        <p>Checar conexão com a internet.</p>
+        <p>Cheque sua conexão com a internet.</p>
       </div>
     `;
     throw err;
   }
+}
+function iniciarAxis() {
+  console.log("AXIS iniciado após validar a licença.");
 }
 // ================================================================
 
@@ -3373,25 +3359,10 @@ function goBackOneStep() {
     return;
   }
 }
- /* ============================================================
-   INICIALIZAÇÃO DO AXIS (APÓS LICENÇA)
-   ============================================================ */
-
-function iniciarAxis() {
-  // Aqui você coloca qualquer coisa que precisa acontecer ao abrir o app.
-  // Como o AXIS já inicia sozinho, provavelmente você não precisa por nada aqui.
-  // Mas manteremos essa função para garantir a ordem correta.
-  console.log("AXIS iniciado após validação da licença.");
-}
-
-   /* ============================================================
-   CARREGAR AXIS SOMENTE APÓS VALIDAR A LICENÇA
-   ============================================================ */
-
 window.addEventListener("load", async () => {
   try {
-    await validateLicenseOrDie();   // ▲ VALIDA A LICENÇA
-    iniciarAxis();                  // ▲ INICIA O AXIS SOMENTE SE LIBERAR
+    await validateLicenseOrDie();
+    iniciarAxis();
   } catch (err) {
     console.error("Falha de licença:", err);
   }
