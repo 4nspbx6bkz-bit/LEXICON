@@ -3364,14 +3364,10 @@ function goBackOneStep() {
    =============================================================== */
 (async function init() {
 
-  // 1) Verificar licença
   const ok = await checkLicenseBeforeStart();
-  if (!ok) return; // Se falhar → para TUDO
+  if (!ok) return;
 
-  // 2) Se a licença for válida → carrega o AXIS normalmente
-  document.body.classList.add("performance");
-  homeStep = 1;
-  openOnly("home");
-  updateHUD();
+  // licença ok → mostra home
+  showPanel("home");
 
 })();
