@@ -22,26 +22,63 @@ async function checkLicenseBeforeStart() {
   const params = new URLSearchParams(location.search);
   let license = params.get("license");
 
-  // 1) Se veio pela URL → salva no device
+  // 1) Se vier licença via URL → salva no aparelho
   if (license) {
-    saveLicense(license);
+    localStorage.setItem("axis_license", license);
   }
 
-  // 2) Se NÃO tem na URL, tenta recuperar do localStorage
+  // 2) Se NÃO vier → pega do localStorage
   if (!license) {
-    license = getSavedLicense();
+    license = localStorage.getItem("axis_license");
   }
 
-  // 3) Se ainda não houver licença → bloqueia
+  // 3) Se ainda não houver licença → tela de erro
   if (!license) {
     document.body.innerHTML = `
       <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
         <h2>Licença necessária</h2>
-        <p>Abra o app pelo link enviado após a compra.</p>
-      </div>`;
+        <p>Abra o app pelo link enviado após a compra pelo menos uma vez.</p>
+      </div>
+    `;
     return false;
   }
 
+  // fingerprint
+  const fp = getDeviceFingerprint();
+
+  try {
+    const resp = await fetch(
+      "https://axis-license-checker.d2bz92x2cp.workers.dev/?license=" +
+      encodeURIComponent(license) +
+      "&fp=" +
+      encodeURIComponent(fp),
+      { method: "GET", mode: "cors" }
+    );
+
+    const data = await resp.json();
+
+    if (!data.ok) {
+      document.body.innerHTML = `
+        <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
+          <h2>Acesso negado</h2>
+          <p>Licença inválida: ${data.error}</p>
+        </div>
+      `;
+      return false;
+    }
+
+    return true;
+
+  } catch (err) {
+    document.body.innerHTML = `
+      <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
+        <h2>Erro ao validar licença</h2>
+        <p>Verifique sua conexão com a internet.</p>
+      </div>
+    `;
+    return false;
+  }
+}
   // Continua normalmente daqui pra baixo
 /* ---------- Helpers ---------- */
 
