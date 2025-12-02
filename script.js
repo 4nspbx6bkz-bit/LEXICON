@@ -2,7 +2,84 @@
    AXIS – Nomes Mágicos
    Swipe / Pigbacking / Grade / Lexicon (simples)
    ============================================================ */
+function getDeviceFingerprint() {
+  return btoa(
+    navigator.userAgent +
+    navigator.platform +
+    screen.width +
+    screen.height
+  );
+}
+async function checkLicenseBeforeStart() {
+  const params = new URLSearchParams(location.search);
+  const license = params.get("license");
 
+  if (!license) {
+    document.body.innerHTML = `
+      <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
+        <h2>Licença necessária</h2>
+        <p>Este app requer uma licença válida.</p>
+        <p>Abra o link exatamente como foi enviado para você.</p>
+      </div>
+    `;
+    return false;
+  }
+
+  const fp = getDeviceFingerprint();
+
+  try {
+    const resp = await fetch(
+      "https://axis-license-checker.d2bz92x2cp.workers.dev" +
+      encodeURIComponent(license) +
+      "&fp=" +
+      encodeURIComponent(fp)
+    );
+
+    const data = await resp.json();
+
+    if (!data.ok) {
+      let msg = "Licença inválida.";
+      if (data.error === "notfound") msg = "Licença não encontrada.";
+      if (data.error === "inactive") msg = "Licença desativada.";
+      if (data.error === "device_limit") msg = "Limite de aparelhos atingido para esta licença.";
+
+      document.body.innerHTML = `
+        <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
+          <h2>Acesso negado</h2>
+          <p>${msg}</p>
+          <p>Caso ache que isso é um erro, fale com o Arthur.</p>
+        </div>
+      `;
+      return false;
+    }
+
+    // OK, licença válida
+    return true;
+
+  } catch (err) {
+    console.error("Erro na verificação de licença:", err);
+    document.body.innerHTML = `
+      <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
+        <h2>Erro de conexão</h2>
+        <p>Não foi possível validar a licença.</p>
+        <p>Verifique sua internet e tente novamente.</p>
+      </div>
+    `;
+    return false;
+  }
+}
+(async function init() {
+  const ok = await checkLicenseBeforeStart();
+  if (!ok) return;
+
+  // 🔽🔽🔽 A PARTIR DAQUI, SEU SCRIPT ATUAL NORMAL 🔽🔽🔽
+
+  // exemplo:
+  // setupSwipeMode();
+  // setupPigback();
+  // ...
+
+})();
 /* ---------- Helpers ---------- */
 
 function normalize(str) {
