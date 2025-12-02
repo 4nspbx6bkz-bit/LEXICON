@@ -68,18 +68,6 @@ async function checkLicenseBeforeStart() {
     return false;
   }
 }
-(async function init() {
-  const ok = await checkLicenseBeforeStart();
-  if (!ok) return;
-
-  // 🔽🔽🔽 A PARTIR DAQUI, SEU SCRIPT ATUAL NORMAL 🔽🔽🔽
-
-  // exemplo:
-  // setupSwipeMode();
-  // setupPigback();
-  // ...
-
-})();
 /* ---------- Helpers ---------- */
 
 function normalize(str) {
@@ -3373,3 +3361,15 @@ function goBackOneStep() {
     return;
   }
 }
+(async function init() {
+  const ok = await checkLicenseBeforeStart();
+  if (!ok) return;
+
+  // 🔽🔽🔽 A PARTIR DAQUI, SEU SCRIPT ATUAL NORMAL 🔽🔽🔽
+
+  // exemplo:
+  // setupSwipeMode();
+  // setupPigback();
+  // ...
+
+})();
