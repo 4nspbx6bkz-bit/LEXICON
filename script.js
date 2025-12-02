@@ -10,6 +10,7 @@ function getDeviceFingerprint() {
     screen.height
   );
 }
+
 async function checkLicenseBeforeStart() {
   const params = new URLSearchParams(location.search);
   const license = params.get("license");
@@ -18,8 +19,7 @@ async function checkLicenseBeforeStart() {
     document.body.innerHTML = `
       <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
         <h2>Licença necessária</h2>
-        <p>Este app requer uma licença válida.</p>
-        <p>Abra o link exatamente como foi enviado para você.</p>
+        <p>Abra o app pelo link enviado após a compra.</p>
       </div>
     `;
     return false;
@@ -29,7 +29,7 @@ async function checkLicenseBeforeStart() {
 
   try {
     const resp = await fetch(
-      "https://axis-license-checker.d2bz92x2cp.workers.dev" +
+      "https://axis-license-checker.d2bz92x2cp.workers.dev/?license=" +
       encodeURIComponent(license) +
       "&fp=" +
       encodeURIComponent(fp)
@@ -39,30 +39,31 @@ async function checkLicenseBeforeStart() {
 
     if (!data.ok) {
       let msg = "Licença inválida.";
-      if (data.error === "notfound") msg = "Licença não encontrada.";
+
+      if (data.error === "notfound") msg = "Licença não existe.";
       if (data.error === "inactive") msg = "Licença desativada.";
-      if (data.error === "device_limit") msg = "Limite de aparelhos atingido para esta licença.";
+      if (data.error === "device_limit") msg = "Limite de dispositivos atingido.";
 
       document.body.innerHTML = `
         <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
           <h2>Acesso negado</h2>
           <p>${msg}</p>
-          <p>Caso ache que isso é um erro, fale com o Arthur.</p>
+          <p>Fale com Arthur Alves para suporte.</p>
         </div>
       `;
       return false;
     }
 
-    // OK, licença válida
+    // Licença válida
     return true;
 
   } catch (err) {
-    console.error("Erro na verificação de licença:", err);
+    console.error("Erro:", err);
+
     document.body.innerHTML = `
       <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
-        <h2>Erro de conexão</h2>
-        <p>Não foi possível validar a licença.</p>
-        <p>Verifique sua internet e tente novamente.</p>
+        <h2>Erro ao validar licença</h2>
+        <p>Verifique sua conexão com a internet.</p>
       </div>
     `;
     return false;
@@ -3361,15 +3362,19 @@ function goBackOneStep() {
     return;
   }
 }
+/* ===============================================================
+   INICIALIZAÇÃO COM VERIFICAÇÃO DE LICENÇA
+   =============================================================== */
 (async function init() {
+
+  // Checa a licença antes de tudo
   const ok = await checkLicenseBeforeStart();
   if (!ok) return;
 
-  // 🔽🔽🔽 A PARTIR DAQUI, SEU SCRIPT ATUAL NORMAL 🔽🔽🔽
-
-  // exemplo:
-  // setupSwipeMode();
-  // setupPigback();
-  // ...
+  // Se a licença for válida → carrega o AXIS normalmente
+  document.body.classList.add("performance");
+  homeStep = 1;
+  openOnly("home");
+  updateHUD();
 
 })();
