@@ -6,19 +6,29 @@
    LICENÇAS – SALVAR, RECUPERAR, VALIDAR
    ============================================================ */
 function getDeviceFingerprint() {
+
+  // iOS Standalone mode muda userAgent → evitamos isso
+  let standalone = window.navigator.standalone ? "IOSPWA" : "BROWSER";
+
+  // storage persistente — não muda no PWA/Navegador
+  let saved = localStorage.getItem("axis_fp");
+  if (saved) return saved;
+
+  // pega um ID realmente único para este APARELHO
   const raw = [
-    navigator.userAgent,
-    navigator.language,
     navigator.platform,
-    navigator.hardwareConcurrency,
-    screen.width + "x" + screen.height,
-    "touch:" + navigator.maxTouchPoints,
-    "ram:" + (navigator.deviceMemory || "x"),
-    "timezone:" + Intl.DateTimeFormat().resolvedOptions().timeZone,
-    "uaData:" + (navigator.userAgentData ? JSON.stringify(navigator.userAgentData) : "none")
+    navigator.language,
+    standalone,
+    screen.width,
+    screen.height,
+    screen.colorDepth
   ].join("|");
 
-  return btoa(raw);
+  const fp = btoa(raw);
+
+  // salva para sempre neste dispositivo
+  localStorage.setItem("axis_fp", fp);
+  return fp;
 }
   // Continua normalmente daqui pra baixo
 /* ---------- Helpers ---------- */
