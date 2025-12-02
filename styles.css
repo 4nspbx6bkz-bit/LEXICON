@@ -307,3 +307,10 @@ body.performance .panel {
   width: 80%;
   max-width: 280px;
 }
+.panel.center {
+  display: flex;
+  flex-direction: column;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center;
+}
