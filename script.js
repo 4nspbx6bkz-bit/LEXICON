@@ -1,6 +1,10 @@
-/* ============================================================
-   SISTEMA DE LICENÇA — FINGERPRINT + VALIDAÇÃO REMOTA
-   ============================================================ */
+/* ===============================================================
+   AXIS SCRIPT.JS — VERSÃO CORRIGIDA
+   - Sistema de licença com 1 dispositivo por código
+   - Sem lista de nomes (adicione depois)
+   =============================================================== */
+
+/* =============== LICENÇA =============== */
 
 function getSavedLicense() {
   return localStorage.getItem("axis_license");
@@ -24,11 +28,17 @@ async function checkLicenseBeforeStart() {
   const params = new URLSearchParams(location.search);
   let license = params.get("license");
 
+  // Se veio pela URL, salva
   if (license) saveLicense(license);
+
+  // Se não tem, pega do localStorage
   license = getSavedLicense();
 
   if (!license) {
-    showLicenseError("Licença necessária", "Abra o app pelo link enviado após a compra.");
+    showLicenseError(
+      "Licença necessária",
+      "Use o link enviado após a compra."
+    );
     return false;
   }
 
@@ -39,52 +49,41 @@ async function checkLicenseBeforeStart() {
       "https://axis-license-checker.d2bz92x2cp.workers.dev/?license=" +
       encodeURIComponent(license) +
       "&fp=" +
-      encodeURIComponent(fp),
-      { method: "GET" }
+      encodeURIComponent(fp)
     );
 
     const data = await resp.json();
 
     if (!data.ok) {
-      if (data.error === "device_limit") {
-        showLicenseError("Acesso bloqueado", "Esta licença já está sendo usada em outro dispositivo.");
-        return false;
-      }
-      showLicenseError("Licença inválida", data.error);
+      showLicenseError("Acesso negado", data.error || "Licença inválida");
       return false;
     }
 
     return true;
 
-  } catch (e) {
-    showLicenseError("Erro na validação", "Verifique sua internet e tente novamente.");
+  } catch (err) {
+    showLicenseError("Erro", "Falha ao validar a licença.");
     return false;
   }
 }
 
 function showLicenseError(title, msg) {
   document.body.innerHTML = `
-    <div style="padding:20px;color:#fff;background:#000;font-family:-apple-system,system-ui;">
+    <div style="padding:20px;color:#fff;background:#000;font-family:-apple-system;">
       <h2>${title}</h2>
       <p>${msg}</p>
     </div>
   `;
 }
 
-
-/* ============================================================
-   HELPERS BÁSICOS
-   ============================================================ */
+/* ===================== HELPERS ===================== */
 
 function normalize(str) {
-  return !str ? "" : str.normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+  if (!str) return "";
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
-function $(id) {
-  return document.getElementById(id);
-}
+function $(id) { return document.getElementById(id); }
 
 function show(id) {
   const el = $(id);
@@ -97,17 +96,13 @@ function hide(id) {
 }
 
 function openOnly(id) {
-  document.querySelectorAll(".panel").forEach(p =>
-    p.classList.remove("visible")
-  );
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("visible"));
   const el = $(id);
   if (el) el.classList.add("visible");
   updateHUD();
 }
 
-/* ============================================================
-   HUD (inferior esquerdo em performance)
-   ============================================================ */
+/* ====================== HUD ======================= */
 
 let hudGender = "";
 let hudLength = "";
@@ -124,19 +119,17 @@ function updateHUD() {
 
   hud.innerHTML = "";
 
-  [hudGender, hudLength, hudLetters]
-    .filter(v => v && v !== "" && v !== "_ _ _")
-    .forEach(v => {
+  [hudGender, hudLength, hudLetters].forEach(v => {
+    if (v && v.trim() !== "") {
       const box = document.createElement("div");
       box.className = "hud-box";
       box.innerText = v;
       hud.appendChild(box);
-    });
+    }
+  });
 }
 
-/* ============================================================
-   HOME
-   ============================================================ */
+/* ================= HOME =================== */
 
 let homeStep = 1;
 
@@ -151,11 +144,9 @@ function updateHomeUI() {
   }
 }
 
-function goHome(force = false) {
-  if (force) homeStep = 1;
-  hudGender = "";
-  hudLength = "";
-  hudLetters = "";
+function goHome(forceStep1 = false) {
+  if (forceStep1) homeStep = 1;
+  hudGender = hudLength = hudLetters = "";
   updateHUD();
   updateHomeUI();
 }
@@ -174,10 +165,10 @@ function setModePerformance() {
   updateHomeUI();
 }
 
-
-/* ============================================================
-   LISTA DE NOMES — VOCÊ IRÁ SUBSTITUIR AQUI
-   ============================================================ */
+/* ===============================================================
+   VOCÊ VAI COLOCAR SUA LISTA DE NOMES AQUI:
+   const RAW_NAMES = [ ... ];
+   =============================================================== */
 
 const RAW_NAMES = [
 "Abel - M",
@@ -2729,10 +2720,9 @@ document.addEventListener("touchend", e => {
   }
 });
 
-
-/* ============================================================
-   INICIALIZAÇÃO FINAL
-   ============================================================ */
+/* ===============================================================
+   INICIAR APP
+   =============================================================== */
 
 (async function init() {
   const ok = await checkLicenseBeforeStart();
