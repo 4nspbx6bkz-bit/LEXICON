@@ -34,14 +34,7 @@ async function checkLicenseBeforeStart() {
 
   // 3) Se ainda não houver licença → tela de erro
   if (!license) {
-    document.body.innerHTML = `
-      <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
-        <h2>Licença necessária</h2>
-        <p>Abra o app pelo link enviado após a compra pelo menos uma vez.</p>
-      </div>
-    `;
-    return false;
-  }
+   openOnly("licenseErrorPanel");
 
   // fingerprint
   const fp = getDeviceFingerprint();
