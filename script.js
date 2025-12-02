@@ -6,14 +6,19 @@
    LICENÇAS – SALVAR, RECUPERAR, VALIDAR
    ============================================================ */
 function getDeviceFingerprint() {
-  let saved = localStorage.getItem("axis_device_fp");
-  if (saved) return saved;
+  const raw = [
+    navigator.userAgent,
+    navigator.language,
+    navigator.platform,
+    navigator.hardwareConcurrency,
+    screen.width + "x" + screen.height,
+    "touch:" + navigator.maxTouchPoints,
+    "ram:" + (navigator.deviceMemory || "x"),
+    "timezone:" + Intl.DateTimeFormat().resolvedOptions().timeZone,
+    "uaData:" + (navigator.userAgentData ? JSON.stringify(navigator.userAgentData) : "none")
+  ].join("|");
 
-  // gerar novo fingerprint único e permanente
-  const fp = "AXIS-" + crypto.randomUUID();
-
-  localStorage.setItem("axis_device_fp", fp);
-  return fp;
+  return btoa(raw);
 }
   // Continua normalmente daqui pra baixo
 /* ---------- Helpers ---------- */
