@@ -260,3 +260,5 @@ body.performance #resultPanel button {
   min-width: 24px;
   text-align: center;
 }
+#licenseErrorPanel { display:none; }
+.panel.visible#licenseErrorPanel { display:flex; }
