@@ -2,13 +2,10 @@
    AXIS – Nomes Mágicos
    Swipe / Pigbacking / Grade / Lexicon (simples)
    ============================================================ */
-function getSavedLicense() {
-  return localStorage.getItem("axis_license") || null;
-}
+/* ============================================================
+   LICENÇAS – SALVAR, RECUPERAR, VALIDAR
+   ============================================================ */
 
-function saveLicense(lic) {
-  localStorage.setItem("axis_license", lic);
-}
 function getDeviceFingerprint() {
   return btoa(
     navigator.userAgent +
@@ -18,38 +15,51 @@ function getDeviceFingerprint() {
   );
 }
 
+function getSavedLicense() {
+  return localStorage.getItem("axis_license") || null;
+}
+
+function saveLicense(lic) {
+  localStorage.setItem("axis_license", lic);
+}
+
 async function checkLicenseBeforeStart() {
-  const params = new URLSearchParams(location.search);
-  let license = params.get("license");
+  const urlParams = new URLSearchParams(location.search);
+  let license = urlParams.get("license");
 
-  // 1) Se vier licença via URL → salva no aparelho
+  // 1) Se veio licença pela URL → salva
   if (license) {
-    localStorage.setItem("axis_license", license);
+    saveLicense(license);
   }
 
-  // 2) Se NÃO vier → pega do localStorage
+  // 2) Se não veio, tenta pegar do aparelho
   if (!license) {
-    license = localStorage.getItem("axis_license");
+    license = getSavedLicense();
   }
 
-  // 3) Se ainda não houver licença → tela de erro
+  // 3) Se mesmo assim não tem → não deixa entrar
   if (!license) {
-   openOnly("licenseErrorPanel");
+    document.body.innerHTML = `
+      <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
+        <h2>Licença necessária</h2>
+        <p>Abra o app pelo link enviado após a compra pelo menos uma vez.</p>
+      </div>
+    `;
+    return false;
+  }
 
-  // fingerprint
   const fp = getDeviceFingerprint();
 
   try {
     const resp = await fetch(
       "https://axis-license-checker.d2bz92x2cp.workers.dev/?license=" +
-      encodeURIComponent(license) +
-      "&fp=" +
-      encodeURIComponent(fp),
-      { method: "GET", mode: "cors" }
+      encodeURIComponent(license) + "&fp=" + encodeURIComponent(fp),
+      { method: "GET" }
     );
 
     const data = await resp.json();
 
+    // SE A LICENÇA FOR INVÁLIDA
     if (!data.ok) {
       document.body.innerHTML = `
         <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
@@ -60,13 +70,14 @@ async function checkLicenseBeforeStart() {
       return false;
     }
 
+    // TUDO OK
     return true;
 
-  } catch (err) {
+  } catch (e) {
     document.body.innerHTML = `
       <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
-        <h2>Erro ao validar licença</h2>
-        <p>Verifique sua conexão com a internet.</p>
+        <h2>Erro de conexão</h2>
+        <p>Não foi possível validar a licença. Tente novamente.</p>
       </div>
     `;
     return false;
@@ -3367,15 +3378,15 @@ function goBackOneStep() {
   }
 }
 /* ===============================================================
-   INICIALIZAÇÃO COM VERIFICAÇÃO DE LICENÇA
+   INICIALIZAÇÃO DO AXIS (PWA + WEB) COM VERIFICAÇÃO DE LICENÇA
    =============================================================== */
 (async function init() {
 
-  // Checa a licença antes de tudo
+  // 1) Verificar licença
   const ok = await checkLicenseBeforeStart();
-  if (!ok) return;
+  if (!ok) return; // Se falhar → para TUDO
 
-  // Se a licença for válida → carrega o AXIS normalmente
+  // 2) Se a licença for válida → carrega o AXIS normalmente
   document.body.classList.add("performance");
   homeStep = 1;
   openOnly("home");
