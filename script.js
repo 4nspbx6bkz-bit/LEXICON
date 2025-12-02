@@ -5,7 +5,6 @@
 /* ============================================================
    LICENÇAS – SALVAR, RECUPERAR, VALIDAR
    ============================================================ */
-
 function getDeviceFingerprint() {
   return btoa(
     navigator.userAgent +
@@ -15,71 +14,54 @@ function getDeviceFingerprint() {
   );
 }
 
-function getSavedLicense() {
-  return localStorage.getItem("axis_license") || null;
-}
-
-function saveLicense(lic) {
-  localStorage.setItem("axis_license", lic);
+function showPanel(id) {
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("visible"));
+  document.getElementById(id).classList.add("visible");
 }
 
 async function checkLicenseBeforeStart() {
-  const urlParams = new URLSearchParams(location.search);
-  let license = urlParams.get("license");
 
-  // 1) Se veio licença pela URL → salva
+  // 1. pega da URL, se existir
+  const params = new URLSearchParams(location.search);
+  let license = params.get("license");
+
+  // se veio pela URL, salva permanentemente
   if (license) {
-    saveLicense(license);
+    localStorage.setItem("axis_license", license);
   }
 
-  // 2) Se não veio, tenta pegar do aparelho
-  if (!license) {
-    license = getSavedLicense();
-  }
+  // 2. pega do aparelho
+  license = localStorage.getItem("axis_license");
 
-  // 3) Se mesmo assim não tem → não deixa entrar
+  // 3. ainda não existe → não mostra nada, só exibe painel
   if (!license) {
-    document.body.innerHTML = `
-      <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
-        <h2>Licença necessária</h2>
-        <p>Abra o app pelo link enviado após a compra pelo menos uma vez.</p>
-      </div>
-    `;
+    showPanel("licenseErrorPanel");
     return false;
   }
 
+  // fingerprint
   const fp = getDeviceFingerprint();
 
   try {
     const resp = await fetch(
       "https://axis-license-checker.d2bz92x2cp.workers.dev/?license=" +
-      encodeURIComponent(license) + "&fp=" + encodeURIComponent(fp),
-      { method: "GET" }
+      encodeURIComponent(license) +
+      "&fp=" +
+      encodeURIComponent(fp),
+      { method: "GET", mode: "cors" }
     );
 
     const data = await resp.json();
 
-    // SE A LICENÇA FOR INVÁLIDA
     if (!data.ok) {
-      document.body.innerHTML = `
-        <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
-          <h2>Acesso negado</h2>
-          <p>Licença inválida: ${data.error}</p>
-        </div>
-      `;
+      showPanel("licenseErrorPanel");
       return false;
     }
 
-    // TUDO OK
     return true;
 
-  } catch (e) {
-    document.body.innerHTML = `
-      <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
-        <h2>Erro de conexão</h2>
-        <p>Não foi possível validar a licença. Tente novamente.</p>
-      </div>
-    `;
+  } catch (err) {
+    showPanel("licenseErrorPanel");
     return false;
   }
 }
