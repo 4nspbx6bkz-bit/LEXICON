@@ -2,6 +2,13 @@
    AXIS – Nomes Mágicos
    Swipe / Pigbacking / Grade / Lexicon (simples)
    ============================================================ */
+function getSavedLicense() {
+  return localStorage.getItem("axis_license") || null;
+}
+
+function saveLicense(lic) {
+  localStorage.setItem("axis_license", lic);
+}
 function getDeviceFingerprint() {
   return btoa(
     navigator.userAgent +
@@ -13,62 +20,29 @@ function getDeviceFingerprint() {
 
 async function checkLicenseBeforeStart() {
   const params = new URLSearchParams(location.search);
-  const license = params.get("license");
+  let license = params.get("license");
 
+  // 1) Se veio pela URL → salva no device
+  if (license) {
+    saveLicense(license);
+  }
+
+  // 2) Se NÃO tem na URL, tenta recuperar do localStorage
+  if (!license) {
+    license = getSavedLicense();
+  }
+
+  // 3) Se ainda não houver licença → bloqueia
   if (!license) {
     document.body.innerHTML = `
       <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
         <h2>Licença necessária</h2>
         <p>Abra o app pelo link enviado após a compra.</p>
-      </div>
-    `;
+      </div>`;
     return false;
   }
 
-  const fp = getDeviceFingerprint();
-
-  try {
-    const resp = await fetch(
-      "https://axis-license-checker.d2bz92x2cp.workers.dev/?license=" +
-      encodeURIComponent(license) +
-      "&fp=" +
-      encodeURIComponent(fp)
-    );
-
-    const data = await resp.json();
-
-    if (!data.ok) {
-      let msg = "Licença inválida.";
-
-      if (data.error === "notfound") msg = "Licença não existe.";
-      if (data.error === "inactive") msg = "Licença desativada.";
-      if (data.error === "device_limit") msg = "Limite de dispositivos atingido.";
-
-      document.body.innerHTML = `
-        <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
-          <h2>Acesso negado</h2>
-          <p>${msg}</p>
-          <p>Fale com Arthur Alves para suporte.</p>
-        </div>
-      `;
-      return false;
-    }
-
-    // Licença válida
-    return true;
-
-  } catch (err) {
-    console.error("Erro:", err);
-
-    document.body.innerHTML = `
-      <div style="padding:20px;font-family:-apple-system,system-ui,sans-serif;color:#fff;background:#000;">
-        <h2>Erro ao validar licença</h2>
-        <p>Verifique sua conexão com a internet.</p>
-      </div>
-    `;
-    return false;
-  }
-}
+  // Continua normalmente daqui pra baixo
 /* ---------- Helpers ---------- */
 
 function normalize(str) {
