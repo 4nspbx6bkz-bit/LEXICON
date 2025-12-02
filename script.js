@@ -1,35 +1,82 @@
-/* ============================================================
-   AXIS – Nomes Mágicos
-   Swipe / Pigbacking / Grade / Lexicon (simples)
-   ============================================================ */
-/* ============================================================
-   LICENÇAS – SALVAR, RECUPERAR, VALIDAR
-   ============================================================ */
-function getDeviceFingerprint() {
-
-  // iOS Standalone mode muda userAgent → evitamos isso
-  let standalone = window.navigator.standalone ? "IOSPWA" : "BROWSER";
-
-  // storage persistente — não muda no PWA/Navegador
-  let saved = localStorage.getItem("axis_fp");
-  if (saved) return saved;
-
-  // pega um ID realmente único para este APARELHO
-  const raw = [
-    navigator.platform,
-    navigator.language,
-    standalone,
-    screen.width,
-    screen.height,
-    screen.colorDepth
-  ].join("|");
-
-  const fp = btoa(raw);
-
-  // salva para sempre neste dispositivo
-  localStorage.setItem("axis_fp", fp);
-  return fp;
+function getSavedLicense() {
+  return localStorage.getItem("axis_license");
 }
+
+function saveLicense(lic) {
+  localStorage.setItem("axis_license", lic);
+}
+
+function getFingerprint() {
+  return btoa(
+    navigator.userAgent +
+    navigator.platform +
+    screen.width +
+    screen.height +
+    (navigator.hardwareConcurrency || "")
+  );
+}
+
+async function checkLicenseBeforeStart() {
+  const params = new URLSearchParams(location.search);
+  let license = params.get("license");
+
+  // Se vier pela URL → registra
+  if (license) saveLicense(license);
+
+  // Se não vier → tenta do localStorage
+  license = getSavedLicense();
+
+  if (!license) {
+    showLicenseError("Licença necessária", "Abra o app pelo link enviado após a compra.");
+    return false;
+  }
+
+  const fp = getFingerprint();
+
+  try {
+    const resp = await fetch(
+      "https://axis-license-checker.d2bz92x2cp.workers.dev/?license=" +
+      encodeURIComponent(license) +
+      "&fp=" +
+      encodeURIComponent(fp),
+      { method: "GET" }
+    );
+
+    const data = await resp.json();
+
+    if (!data.ok) {
+      if (data.error === "device_limit") {
+        showLicenseError(
+          "Acesso bloqueado",
+          "A licença já está sendo usada em outro dispositivo."
+        );
+        return false;
+      }
+
+      showLicenseError("Licença inválida", data.error);
+      return false;
+    }
+
+    return true;
+
+  } catch (e) {
+    showLicenseError(
+      "Erro ao validar",
+      "Verifique sua internet e tente novamente."
+    );
+    return false;
+  }
+}
+
+function showLicenseError(title, msg) {
+  document.body.innerHTML = `
+    <div style="padding:20px;color:#fff;background:#000;font-family:-apple-system,system-ui;">
+      <h2>${title}</h2>
+      <p>${msg}</p>
+    </div>
+  `;
+}
+
   // Continua normalmente daqui pra baixo
 /* ---------- Helpers ---------- */
 
@@ -3324,15 +3371,15 @@ function goBackOneStep() {
     return;
   }
 }
-/* ===============================================================
-   INICIALIZAÇÃO DO AXIS (PWA + WEB) COM VERIFICAÇÃO DE LICENÇA
-   =============================================================== */
+/* =======================
+   INICIALIZAÇÃO COMPLETA
+   ======================= */
 (async function init() {
-
   const ok = await checkLicenseBeforeStart();
   if (!ok) return;
 
-  // licença ok → mostra home
-  showPanel("home");
-
+  // CARREGAR O AXIS NORMALMENTE
+  document.body.classList.add("performance");
+  homeStep = 1;
+  openOnly("home");
 })();
