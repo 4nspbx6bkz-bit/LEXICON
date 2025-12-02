@@ -6,72 +6,14 @@
    LICENÇAS – SALVAR, RECUPERAR, VALIDAR
    ============================================================ */
 function getDeviceFingerprint() {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+  let saved = localStorage.getItem("axis_device_fp");
+  if (saved) return saved;
 
-  ctx.textBaseline = "top";
-  ctx.font = "14px 'Arial'";
-  ctx.fillText(navigator.userAgent, 2, 2);
+  // gerar novo fingerprint único e permanente
+  const fp = "AXIS-" + crypto.randomUUID();
 
-  const data = canvas.toDataURL(); // fingerprint gráfico único
-  
-  return btoa(
-    navigator.userAgent +
-    navigator.platform +
-    data
-  );
-}
-
-function showPanel(id) {
-  document.querySelectorAll(".panel").forEach(p => p.classList.remove("visible"));
-  document.getElementById(id).classList.add("visible");
-}
-
-async function checkLicenseBeforeStart() {
-
-  // 1. pega da URL, se existir
-  const params = new URLSearchParams(location.search);
-  let license = params.get("license");
-
-  // se veio pela URL, salva permanentemente
-  if (license) {
-    localStorage.setItem("axis_license", license);
-  }
-
-  // 2. pega do aparelho
-  license = localStorage.getItem("axis_license");
-
-  // 3. ainda não existe → não mostra nada, só exibe painel
-  if (!license) {
-    showPanel("licenseErrorPanel");
-    return false;
-  }
-
-  // fingerprint
-  const fp = getDeviceFingerprint();
-
-  try {
-    const resp = await fetch(
-      "https://axis-license-checker.d2bz92x2cp.workers.dev/?license=" +
-      encodeURIComponent(license) +
-      "&fp=" +
-      encodeURIComponent(fp),
-      { method: "GET", mode: "cors" }
-    );
-
-    const data = await resp.json();
-
-    if (!data.ok) {
-      showPanel("licenseErrorPanel");
-      return false;
-    }
-
-    return true;
-
-  } catch (err) {
-    showPanel("licenseErrorPanel");
-    return false;
-  }
+  localStorage.setItem("axis_device_fp", fp);
+  return fp;
 }
   // Continua normalmente daqui pra baixo
 /* ---------- Helpers ---------- */
