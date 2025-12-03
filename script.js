@@ -1,10 +1,7 @@
 /* ============================================================
-   AXIS — SCRIPT COMPLETO + PROTEÇÃO DE LICENÇA (1 DISPOSITIVO)
+   LICENÇA / FINGERPRINT
    ============================================================ */
 
-/* ============================================================
-   LICENÇA — VERIFICAÇÃO E BLOQUEIO DE SEGUNDO DISPOSITIVO
-   ============================================================ */
 function getSavedLicense() {
   return localStorage.getItem("axis_license");
 }
@@ -27,11 +24,17 @@ async function checkLicenseBeforeStart() {
   const params = new URLSearchParams(location.search);
   let license = params.get("license");
 
+  // Se vier pela URL → registra
   if (license) saveLicense(license);
 
+  // Se não vier → tenta do localStorage
   license = getSavedLicense();
+
   if (!license) {
-    showLicenseError("Licença necessária", "Abra pelo link enviado após a compra.");
+    showLicenseError(
+      "Licença necessária",
+      "Abra o app pelo link enviado após a compra."
+    );
     return false;
   }
 
@@ -39,10 +42,10 @@ async function checkLicenseBeforeStart() {
 
   try {
     const resp = await fetch(
-      "https://axis-license-checker.d2bz92x2cp.workers.dev/?license=" +
-      encodeURIComponent(license) +
-      "&fp=" +
-      encodeURIComponent(fp)
+      "https://axis-license-checker.d2bz92x2cp.workers.dev/?" +
+      "license=" + encodeURIComponent(license) +
+      "&fp=" + encodeURIComponent(fp),
+      { method: "GET" }
     );
 
     const data = await resp.json();
@@ -51,116 +54,37 @@ async function checkLicenseBeforeStart() {
       if (data.error === "device_limit") {
         showLicenseError(
           "Acesso bloqueado",
-          "Esta licença já está ativada em outro dispositivo."
+          "A licença já está sendo usada em outro dispositivo."
         );
         return false;
       }
-      showLicenseError("Licença inválida", data.error);
+
+      showLicenseError("Licença inválida", data.error || "Erro de licença.");
       return false;
     }
 
+    // ok
     return true;
 
   } catch (e) {
-    showLicenseError("Erro ao validar", "Verifique sua internet e tente novamente.");
+    console.error("Erro ao validar licença:", e);
+    showLicenseError(
+      "Erro ao validar",
+      "Verifique sua internet e tente novamente."
+    );
     return false;
   }
 }
 
 function showLicenseError(title, msg) {
   document.body.innerHTML = `
-    <div style="padding:20px;color:#fff;background:#000;font-family:-apple-system,system-ui;text-align:center">
+    <div style="padding:20px;color:#fff;background:#000;font-family:-apple-system,system-ui;">
       <h2>${title}</h2>
       <p>${msg}</p>
     </div>
   `;
 }
 
-/* ============================================================
-   HELPERS
-   ============================================================ */
-function normalize(str) {
-  if (!str) return "";
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
-function $(id) { return document.getElementById(id); }
-function show(id) { const el = $(id); if (el) el.style.display = ""; }
-function hide(id) { const el = $(id); if (el) el.style.display = "none"; }
-
-function openOnly(id) {
-  document.querySelectorAll(".panel").forEach(p => p.classList.remove("visible"));
-  const el = $(id);
-  if (el) el.classList.add("visible");
-  updateHUD();
-}
-
-/* ============================================================
-   HUD
-   ============================================================ */
-let hudGender = "";
-let hudLength = "";
-let hudLetters = "";
-
-function updateHUD() {
-  const hud = $("hud");
-  if (!hud) return;
-
-  if (!document.body.classList.contains("performance")) {
-    hud.innerHTML = "";
-    return;
-  }
-
-  hud.innerHTML = "";
-  [hudGender, hudLength, hudLetters]
-    .filter(v => v && v !== "_ _ _")
-    .forEach(v => {
-      const box = document.createElement("div");
-      box.className = "hud-box";
-      box.innerText = v;
-      hud.appendChild(box);
-    });
-}
-
-/* ============================================================
-   HOME
-   ============================================================ */
-let homeStep = 1;
-
-function updateHomeUI() {
-  openOnly("home");
-  if (homeStep === 1) {
-    show("home-step1");
-    hide("home-step2");
-  } else {
-    hide("home-step1");
-    show("home-step2");
-  }
-}
-
-function goHome(step1 = false) {
-  if (step1) homeStep = 1;
-  hudGender = hudLength = hudLetters = "";
-  updateHUD();
-  updateHomeUI();
-}
-
-function setModeTraining() {
-  document.body.classList.remove("performance");
-  document.body.classList.add("training");
-  homeStep = 2;
-  updateHomeUI();
-}
-
-function setModePerformance() {
-  document.body.classList.remove("training");
-  document.body.classList.add("performance");
-  homeStep = 2;
-  updateHomeUI();
-}
-
-/* ============================================================
-   LISTA DE NOMES (INSERIR SUA LISTA AQUI)
-   ============================================================ */
 const RAW_NAMES = [
 "Abel - M",
   "Abigail - F",
@@ -2188,7 +2112,1264 @@ const RAW_NAMES = [
   "Zuleide - F",
   "Zulmira - F",
   "Zumira - F"
-  ]; // <<< sua lista entra aqui
+  ];
+/* ============================================================
+   HELPERS
+   ============================================================ */
+
+function normalize(str) {
+  if (!str) return "";
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function $(id) {
+  return document.getElementById(id);
+}
+
+function show(id) {
+  const el = $(id);
+  if (el) el.style.display = "";
+}
+
+function hide(id) {
+  const el = $(id);
+  if (el) el.style.display = "none";
+}
+
+function openOnly(id) {
+  document.querySelectorAll(".panel").forEach(p =>
+    p.classList.remove("visible")
+  );
+  const el = $(id);
+  if (el) el.classList.add("visible");
+  updateHUD(); // sempre atualiza HUD quando troca painel
+}
+
+/* ============================================================
+   HUD – pequeno canto inferior esquerdo (apenas performance)
+   ============================================================ */
+
+let hudGender = "";
+let hudLength = "";
+let hudLetters = "";
+
+function updateHUD() {
+  const hud = $("hud");
+  if (!hud) return;
+
+  // Mostra HUD apenas em performance
+  if (!document.body.classList.contains("performance")) {
+    hud.innerHTML = "";
+    return;
+  }
+
+  function setHUD(items) {
+    hud.innerHTML = "";
+    items.forEach(val => {
+      if (val && val !== "" && val !== "_ _ _") {
+        const box = document.createElement("div");
+        box.className = "hud-box";
+        box.innerText = val;
+        hud.appendChild(box);
+      }
+    });
+  }
+
+  /* ============================
+        SWIPE MODE
+     ============================ */
+  if ($("swipePanel") && $("swipePanel").classList.contains("visible")) {
+    if (swipeStage === "gender") {
+      setHUD([swipeGender]);
+    } else if (swipeStage === "length") {
+      setHUD([swipeGender, swipeLength]);
+    } else if (swipeStage === "letters") {
+      setHUD([swipeGender, swipeLength, swipeLetters.join("")]);
+    }
+    return;
+  }
+
+  /* ============================
+        PIGBACK MODE
+     ============================ */
+  if ($("pigbackPanel") && $("pigbackPanel").classList.contains("visible")) {
+    if (pigStage === "gender") {
+      setHUD([pigGender]);
+    } else if (pigStage === "length") {
+      setHUD([pigGender, pigLength]);
+    } else if (pigStage === "letters") {
+      setHUD([pigGender, pigLength, pigLetters.join("")]);
+    }
+    return;
+  }
+
+  /* ============================
+        GRADE MODE
+     ============================ */
+  if ($("gradeSetupPanel") && $("gradeSetupPanel").classList.contains("visible")) {
+    if (gradeStage === "gender") {
+      setHUD([gradeGender]);
+    } else if (gradeStage === "length") {
+      setHUD([gradeGender, gradeLength]);
+    } else if (gradeStage === "summary") {
+      setHUD([gradeGender, gradeLength, gradeLetters.join("")]);
+    }
+    return;
+  }
+
+  if ($("gradeLettersPanel") && $("gradeLettersPanel").classList.contains("visible")) {
+    setHUD([gradeGender, gradeLength, gradeLetters.join("")]);
+    return;
+  }
+
+  /* ============================
+        LEXICON
+     ============================ */
+  if ($("lexiconVCPanel") && $("lexiconVCPanel").classList.contains("visible")) {
+    if (lexStep === 1) {
+      setHUD([lexGender]);
+    } else if (lexStep === 2) {
+      setHUD([lexGender, lexBinPattern.join("")]);
+    }
+    return;
+  }
+
+  if (
+    ($("lexiconVowelPanel") && $("lexiconVowelPanel").classList.contains("visible")) ||
+    ($("lexiconShapePanel") && $("lexiconShapePanel").classList.contains("visible")) ||
+    ($("lexiconLetterPanel") && $("lexiconLetterPanel").classList.contains("visible")) ||
+    ($("lexiconBinaryPanel") && $("lexiconBinaryPanel").classList.contains("visible"))
+  ) {
+    setHUD([lexGender, lexBinPattern.join("")]);
+    return;
+  }
+
+  /* ============================
+        RESULTADOS
+     ============================ */
+  if ($("resultPanel") && $("resultPanel").classList.contains("visible")) {
+    hud.innerHTML = "";
+    return;
+  }
+}
+
+/* ============================================================
+   HOME / MODO TREINO X PERFORMANCE
+   ============================================================ */
+
+let homeStep = 1;
+
+function updateHomeUI() {
+  openOnly("home");
+  if (homeStep === 1) {
+    show("home-step1");
+    hide("home-step2");
+  } else {
+    hide("home-step1");
+    show("home-step2");
+  }
+}
+
+function goHome(forceStep1 = false) {
+  if (forceStep1) homeStep = 1;
+  hudGender = "";
+  hudLength = "";
+  hudLetters = "";
+  updateHUD();
+  updateHomeUI();
+}
+
+function setModeTraining() {
+  document.body.classList.remove("performance");
+  document.body.classList.add("training");
+  homeStep = 2;
+  updateHomeUI();
+}
+
+function setModePerformance() {
+  document.body.classList.remove("training");
+  document.body.classList.add("performance");
+  homeStep = 2;
+  updateHomeUI();
+}
+
+/* ============================================================
+   LISTA DE NOMES
+   (COLE SUA LISTA COMPLETA EM RAW_NAMES)
+   ============================================================ */
+
+const RAW_NAMES = [
+  // Exemplo:
+  // "Arthur - M",
+  // "Maria - F",
+  // ...
+];
+
+const ALPHABET = "abcdefghijklmnopqrstuvwxyz";
+
+const NAMES = RAW_NAMES.map(n => {
+  const parts = n.split("-");
+  const name = parts[0].trim();
+  const gender = (parts[1] || "").trim();
+  return {
+    raw: name,
+    clean: normalize(name).replace(/\s+/g, ""),
+    gender
+  };
+});
+
+/* ============================================================
+   ALGORITMO DE MATCH
+   ============================================================ */
+
+function findApproxCandidates(gender, length, letters, pigFirstReal) {
+  const win = 6; // range máximo pra frente
+  const out = [];
+
+  const input = letters.map(l => (l || "").toLowerCase());
+
+  for (const n of NAMES) {
+    if (gender && n.gender && n.gender !== gender) continue;
+    if (length && n.clean.length !== length) continue;
+
+    let ok = true;
+    let score = 0;
+
+    for (let i = 0; i < 3; i++) {
+      const real = n.clean[i];
+      const inp = input[i];
+
+      if (!inp || inp === "_") { ok = false; break; }
+
+      // Pigback: 1ª letra exata
+      if (pigFirstReal && i === 0) {
+        if (real !== inp) { ok = false; break; }
+        continue;
+      }
+
+      const r = ALPHABET.indexOf(real);
+      const t = ALPHABET.indexOf(inp);
+      if (r < 0 || t < 0) { ok = false; break; }
+
+      const diff = (t - r + 26) % 26;
+      if (diff <= 0 || diff > win) { ok = false; break; }
+
+      score += diff;
+    }
+
+    if (ok) out.push({ raw: n.raw, score });
+  }
+
+  return out.sort((a, b) => a.score - b.score).slice(0, 9);
+}
+
+/* ============================================================
+   RESULTADOS
+   ============================================================ */
+
+function showResults(list) {
+  openOnly("resultPanel");
+  const box = $("resultBox");
+
+  if (!box) return;
+
+  if (!list || list.length === 0) {
+    box.innerText = "Nenhum nome encontrado!";
+    return;
+  }
+
+  box.innerText = list
+    .slice(0, 9)
+    .map(c => c.raw)
+    .join("\n");
+}
+
+/* ============================================================
+   SWIPE MODE
+   ============================================================ */
+
+let swipeStage = "gender";
+let swipeGender = "M";
+let swipeLength = 6;
+let swipeLetters = ["_", "_", "_"];
+let swipeLetterIndex = 0;
+let swipeLetterChar = "m";
+
+function updateSwipeLettersDisplay() {
+  const el = $("swipeLetters");
+  if (el) el.innerText = swipeLetters.join(" ");
+}
+
+function updateSwipeUI() {
+  hide("swipe-step-gender");
+  hide("swipe-step-length");
+  hide("swipe-step-letters");
+
+  if (swipeStage === "gender") show("swipe-step-gender");
+  if (swipeStage === "length") show("swipe-step-length");
+  if (swipeStage === "letters") show("swipe-step-letters");
+
+  const g = $("swipeGender");
+  const l = $("swipeLength");
+  if (g) g.innerText = swipeGender;
+  if (l) l.innerText = swipeLength;
+  updateSwipeLettersDisplay();
+
+  hudGender = swipeGender;
+  hudLength = swipeLength;
+  hudLetters = swipeLetters.join("");
+  updateHUD();
+}
+
+function startSwipe() {
+  swipeStage = "gender";
+  swipeGender = "M";
+  swipeLength = 6;
+  swipeLetters = ["_", "_", "_"];
+  swipeLetterIndex = 0;
+  swipeLetterChar = "m";
+
+  openOnly("swipePanel");
+  updateSwipeUI();
+}
+
+function swipeModeUp() {
+  if (swipeStage === "gender") {
+    swipeGender = "M";
+  } else if (swipeStage === "length") {
+    swipeLength = Math.min(swipeLength + 1, 12);
+  } else if (swipeStage === "letters") {
+    let idx = ALPHABET.indexOf(swipeLetterChar);
+    idx = (idx + 1 + ALPHABET.length) % ALPHABET.length;
+    swipeLetterChar = ALPHABET[idx];
+    swipeLetters[swipeLetterIndex] = swipeLetterChar.toUpperCase();
+  }
+  updateSwipeUI();
+}
+
+function swipeModeDown() {
+  if (swipeStage === "gender") {
+    swipeGender = "F";
+  } else if (swipeStage === "length") {
+    swipeLength = Math.max(swipeLength - 1, 3);
+  } else if (swipeStage === "letters") {
+    let idx = ALPHABET.indexOf(swipeLetterChar);
+    idx = (idx - 1 + ALPHABET.length) % ALPHABET.length;
+    swipeLetterChar = ALPHABET[idx];
+    swipeLetters[swipeLetterIndex] = swipeLetterChar.toUpperCase();
+  }
+  updateSwipeUI();
+}
+
+function swipeModeRight() {
+  if (swipeStage === "gender") {
+    swipeStage = "length";
+  } else if (swipeStage === "length") {
+    swipeStage = "letters";
+    swipeLetterIndex = 0;
+    swipeLetterChar = "m";
+    swipeLetters = ["M", "_", "_"];
+  } else if (swipeStage === "letters") {
+    swipeLetterIndex++;
+    if (swipeLetterIndex >= 3) {
+      const candidates = findApproxCandidates(
+        swipeGender,
+        swipeLength,
+        swipeLetters,
+        false
+      );
+      showResults(candidates);
+      return;
+    }
+    swipeLetterChar = "m";
+    swipeLetters[swipeLetterIndex] = "M";
+  }
+  updateSwipeUI();
+}
+
+function swipeModeLeft() {
+  if (swipeStage === "length") {
+    swipeStage = "gender";
+  } else if (swipeStage === "letters") {
+    swipeStage = "length";
+  }
+  updateSwipeUI();
+}
+
+(function setupSwipeMode() {
+  const panel = $("swipePanel");
+  if (!panel) return;
+
+  let startX = null;
+  let startY = null;
+
+  panel.addEventListener("touchstart", e => {
+    if (e.touches.length === 1) {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }
+  });
+
+  panel.addEventListener("touchend", e => {
+    if (startX == null) return;
+
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    const dx = endX - startX;
+    const dy = endY - startY;
+
+    if (Math.abs(dy) > Math.abs(dx)) {
+      if (dy < -30) swipeModeUp();
+      else if (dy > 30) swipeModeDown();
+    } else {
+      if (dx > 30) swipeModeRight();
+      else if (dx < -30) swipeModeLeft();
+    }
+
+    startX = startY = null;
+  });
+})();
+
+/* ============================================================
+   PIGBACKING MODE
+   ============================================================ */
+
+let pigStage = "gender";
+let pigGender = "M";
+let pigLength = 6;
+let pigLetters = ["_", "_", "_"];
+let pigLetterIndex = 0;
+let pigLetterChar = "m";
+
+function updatePigLettersDisplay() {
+  const el = $("pigLetters");
+  if (el) el.innerText = pigLetters.join(" ");
+}
+
+function updatePigUI() {
+  hide("pig-step-gender");
+  hide("pig-step-length");
+  hide("pig-step-letters");
+
+  if (pigStage === "gender") show("pig-step-gender");
+  if (pigStage === "length") show("pig-step-length");
+  if (pigStage === "letters") show("pig-step-letters");
+
+  const g = $("pigGender");
+  const l = $("pigLength");
+  if (g) g.innerText = pigGender;
+  if (l) l.innerText = pigLength;
+  updatePigLettersDisplay();
+
+  hudGender = pigGender;
+  hudLength = pigLength;
+  hudLetters = pigLetters.join("");
+  updateHUD();
+}
+
+function startPigback() {
+  pigStage = "gender";
+  pigGender = "M";
+  pigLength = 6;
+  pigLetters = ["_", "_", "_"];
+  pigLetterIndex = 0;
+  pigLetterChar = "m";
+
+  openOnly("pigbackPanel");
+  updatePigUI();
+}
+
+function pigUp() {
+  if (pigStage === "gender") {
+    pigGender = "M";
+  } else if (pigStage === "length") {
+    pigLength = Math.min(pigLength + 1, 12);
+  } else if (pigStage === "letters") {
+    let idx = ALPHABET.indexOf(pigLetterChar);
+    idx = (idx + 1 + ALPHABET.length) % ALPHABET.length;
+    pigLetterChar = ALPHABET[idx];
+    pigLetters[pigLetterIndex] = pigLetterChar.toUpperCase();
+  }
+  updatePigUI();
+}
+
+function pigDown() {
+  if (pigStage === "gender") {
+    pigGender = "F";
+  } else if (pigStage === "length") {
+    pigLength = Math.max(pigLength - 1, 3);
+  } else if (pigStage === "letters") {
+    let idx = ALPHABET.indexOf(pigLetterChar);
+    idx = (idx - 1 + ALPHABET.length) % ALPHABET.length;
+    pigLetterChar = ALPHABET[idx];
+    pigLetters[pigLetterIndex] = pigLetterChar.toUpperCase();
+  }
+  updatePigUI();
+}
+
+function pigRight() {
+  if (pigStage === "gender") {
+    pigStage = "length";
+  } else if (pigStage === "length") {
+    pigStage = "letters";
+    pigLetterIndex = 0;
+    pigLetterChar = "m";
+    pigLetters = ["M", "_", "_"];
+  } else if (pigStage === "letters") {
+    pigLetterIndex++;
+    if (pigLetterIndex >= 3) {
+      const candidates = findApproxCandidates(
+        pigGender,
+        pigLength,
+        pigLetters,
+        true
+      );
+      showResults(candidates);
+      return;
+    }
+    pigLetterChar = "m";
+    pigLetters[pigLetterIndex] = "M";
+  }
+  updatePigUI();
+}
+
+function pigLeft() {
+  if (pigStage === "length") {
+    pigStage = "gender";
+  } else if (pigStage === "letters") {
+    pigStage = "length";
+  }
+  updatePigUI();
+}
+
+(function setupPigback() {
+  const panel = $("pigbackPanel");
+  if (!panel) return;
+
+  let startX = null;
+  let startY = null;
+
+  panel.addEventListener("touchstart", e => {
+    if (e.touches.length === 1) {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }
+  });
+
+  panel.addEventListener("touchend", e => {
+    if (startX == null) return;
+
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    const dx = endX - startX;
+    const dy = endY - startY;
+
+    if (Math.abs(dy) > Math.abs(dx)) {
+      if (dy < -30) pigUp();
+      else if (dy > 30) pigDown();
+    } else {
+      if (dx > 30) pigRight();
+      else if (dx < -30) pigLeft();
+    }
+
+    startX = startY = null;
+  });
+})();
+
+/* ============================================================
+   GRADE MODE — (HUD + Swipe + Grade Direta)
+   ============================================================ */
+
+let gradeStage = "gender";
+let gradeGender = "M";
+let gradeLength = 6;
+let gradeLetters = ["_", "_", "_"];
+let gradeLetterIndex = 0;
+
+function updateGradeHUD() {
+  hudGender = gradeGender;
+  hudLength = gradeLength;
+  hudLetters = gradeLetters.join("");
+  updateHUD();
+}
+
+function startGrade() {
+  gradeStage = "gender";
+  gradeGender = "M";
+  gradeLength = 6;
+  gradeLetters = ["_", "_", "_"];
+  gradeLetterIndex = 0;
+
+  openOnly("gradeSetupPanel");
+  updateGradeHUD();
+}
+
+function openGradeLetters() {
+  const grid = $("gradeLetterGrid");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+
+  ALPHABET.toUpperCase().split("").forEach(L => {
+    const b = document.createElement("button");
+    b.innerText = L;
+    b.onclick = () => {
+      if (gradeLetterIndex >= 3) return;
+      gradeLetters[gradeLetterIndex++] = L;
+      updateGradeHUD();
+      if (gradeLetterIndex === 3) {
+        showResults(findApproxCandidates(gradeGender, gradeLength, gradeLetters, false));
+      }
+    };
+    grid.appendChild(b);
+  });
+
+  openOnly("gradeLettersPanel");
+  updateGradeHUD();
+}
+
+function gradeUp() {
+  if (gradeStage === "gender") gradeGender = "M";
+  else gradeLength = Math.min(gradeLength + 1, 12);
+  updateGradeHUD();
+}
+
+function gradeDown() {
+  if (gradeStage === "gender") gradeGender = "F";
+  else gradeLength = Math.max(gradeLength - 1, 3);
+  updateGradeHUD();
+}
+
+function gradeRight() {
+  if (gradeStage === "gender") {
+    gradeStage = "length";
+  } else if (gradeStage === "length") {
+    openGradeLetters();
+    return;
+  }
+  updateGradeHUD();
+}
+
+function gradeLeft() {
+  if (gradeStage === "length") {
+    gradeStage = "gender";
+  }
+  updateGradeHUD();
+}
+
+(function setupGrade() {
+  const panel = $("gradeSetupPanel");
+  if (!panel) return;
+
+  let sx = null, sy = null;
+
+  panel.addEventListener("touchstart", e => {
+    if (e.touches.length === 1) {
+      sx = e.touches[0].clientX;
+      sy = e.touches[0].clientY;
+    }
+  });
+
+  panel.addEventListener("touchend", e => {
+    if (sx == null) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+
+    if (Math.abs(dy) > Math.abs(dx)) {
+      if (dy < -30) gradeUp();
+      else if (dy > 30) gradeDown();
+    } else {
+      if (dx > 30) gradeRight();
+      else if (dx < -30) gradeLeft();
+    }
+
+    sx = sy = null;
+  });
+})();
+
+/* ============================================================
+   LEXICON — COMPLETO + INTELIGENTE + SWIPES
+   ============================================================ */
+
+let lexGender = "M";
+let lexBinPattern = [];
+let lexLength = 0;
+
+let lexKnownShapes = {};
+let lexKnownLetters = {};
+let lexFirstVowelPos = null;
+let lexFirstVowelHalf = null;
+
+let lexHypotheses = [];
+let lexCurrentPos = null;
+let lexBinaryQuestion = null;
+let lexStep = 1;
+
+function startLexicon() {
+  lexGender = "M";
+  lexBinPattern = [];
+  lexLength = 0;
+
+  lexKnownShapes = {};
+  lexKnownLetters = {};
+  lexFirstVowelPos = null;
+  lexFirstVowelHalf = null;
+
+  lexHypotheses = [];
+  lexCurrentPos = null;
+  lexBinaryQuestion = null;
+
+  lexStep = 1;
+
+  hudGender = "M";
+  hudLength = 0;
+  hudLetters = "";
+  updateHUD();
+
+  openOnly("lexiconVCPanel");
+}
+
+/* ---------------- SWIPES VC ---------------- */
+
+function lexSwipeUp() {
+  if (lexStep === 1) {
+    lexGender = "M";
+    hudGender = "M";
+    updateHUD();
+  } else if (lexStep === 2) {
+    lexBinPattern.push("1");
+    lexLength = lexBinPattern.length;
+    hudLength = lexLength;
+    hudLetters = lexBinPattern.join("");
+    updateHUD();
+  }
+}
+
+function lexSwipeDown() {
+  if (lexStep === 1) {
+    lexGender = "F";
+    hudGender = "F";
+    updateHUD();
+  } else if (lexStep === 2) {
+    lexBinPattern.push("2");
+    lexLength = lexBinPattern.length;
+    hudLength = lexLength;
+    hudLetters = lexBinPattern.join("");
+    updateHUD();
+  }
+}
+
+function lexSwipeRight() {
+  if (lexStep === 1) {
+    lexStep = 2;
+    return;
+  }
+  if (lexStep === 2) finishVC();
+}
+
+(function setupLexiconSwipe() {
+  const panel = $("lexiconVCPanel");
+  if (!panel) return;
+
+  let sx, sy;
+
+  panel.addEventListener("touchstart", e => {
+    if (e.touches.length === 1) {
+      sx = e.touches[0].clientX;
+      sy = e.touches[0].clientY;
+    }
+  });
+
+  panel.addEventListener("touchend", e => {
+    if (sx == null) return;
+
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+
+    if (Math.abs(dy) > Math.abs(dx)) {
+      if (dy < -30) lexSwipeUp();
+      else if (dy > 30) lexSwipeDown();
+    } else {
+      if (dx > 30) lexSwipeRight();
+    }
+
+    sx = sy = null;
+  });
+})();
+
+/* ============================================================
+   LEXICON — BUILD INITIAL HYPOTHESES
+   ============================================================ */
+
+function buildInitialHypotheses() {
+  const base = NAMES.filter(n =>
+    n.gender === lexGender &&
+    n.clean.length === lexLength
+  );
+
+  const MAP1 = { "1": "V", "2": "C" }; // 1=Vogal, 2=Consoante
+  const MAP2 = { "1": "C", "2": "V" }; // 1=Consoante, 2=Vogal
+
+  function matchesPattern(clean, pattern, map) {
+    for (let i = 0; i < pattern.length; i++) {
+      const bit = pattern[i];
+      const want = map[bit];
+      const isVowel = "aeiou".includes(clean[i]);
+
+      if (want === "V" && !isVowel) return false;
+      if (want === "C" && isVowel) return false;
+    }
+    return true;
+  }
+
+  const list = [];
+
+  const group1 = base.filter(n => matchesPattern(n.clean, lexBinPattern, MAP1));
+  if (group1.length) list.push({ map: MAP1, candidates: group1 });
+
+  const group2 = base.filter(n => matchesPattern(n.clean, lexBinPattern, MAP2));
+  if (group2.length) list.push({ map: MAP2, candidates: group2 });
+
+  return list;
+}
+
+/* ---------------- FINALIZA VC ---------------- */
+
+function finishVC() {
+  if (lexBinPattern.length === 0) return;
+  lexHypotheses = buildInitialHypotheses();
+  if (lexHypotheses.length === 0) return showResults([]);
+  proceedNextLexQuestion();
+}
+
+/* ---------------- FILTROS / CANDIDATOS ---------------- */
+
+function reduceHypotheses() {
+  const newList = [];
+  for (const h of lexHypotheses) {
+    const filtered = applyLexFilters(h.candidates);
+    if (filtered.length) newList.push({ map: h.map, candidates: filtered });
+  }
+  lexHypotheses = newList;
+}
+
+function applyLexFilters(list) {
+  let r = list.slice();
+
+  for (const pos in lexKnownShapes)
+    r = r.filter(c => letterShape(c.clean[pos]) === lexKnownShapes[pos]);
+
+  for (const pos in lexKnownLetters)
+    r = r.filter(c => c.clean[pos] === lexKnownLetters[pos]);
+
+  if (lexFirstVowelPos !== null)
+    r = r.filter(c => firstVowelIndex(c.clean) === lexFirstVowelPos);
+
+  if (lexFirstVowelHalf) {
+    const half = lexFirstVowelHalf.half;
+    const thr = half - 1;
+    const wantBefore = lexFirstVowelHalf.isBefore;
+
+    r = r.filter(c => {
+      const idx = firstVowelIndex(c.clean);
+      if (idx < 0) return false;
+      return (idx <= thr) === wantBefore;
+    });
+  }
+  return r;
+}
+
+function allCandidates() {
+  const map = new Map();
+  for (const h of lexHypotheses)
+    for (const c of h.candidates)
+      map.set(c.raw, c);
+  return Array.from(map.values());
+}
+
+/* ============================================================
+   LEXICON — PERGUNTA OTIMIZADA
+   ============================================================ */
+
+function proceedNextLexQuestion() {
+  reduceHypotheses();
+  const all = allCandidates();
+
+  if (all.length === 0) {
+    return showResults([]);
+  }
+
+  const alreadyFiltered =
+    Object.keys(lexKnownShapes).length > 0 ||
+    Object.keys(lexKnownLetters).length > 0 ||
+    lexFirstVowelPos !== null ||
+    lexFirstVowelHalf !== null;
+
+  // Sem perguntas → ok parar com ≤ 9 nomes
+  if (!alreadyFiltered && all.length <= 9) {
+    return showResults(all);
+  }
+
+  // Já com perguntas → só parar com ≤ 5 nomes
+  if (alreadyFiltered && all.length <= 5) {
+    return showResults(all);
+  }
+
+  const questions = [];
+
+  /* 1) PRIMEIRA VOGAL */
+  if (lexFirstVowelPos === null) {
+    const counts = {};
+    all.forEach(c => {
+      const idx = firstVowelIndex(c.clean);
+      if (idx >= 0) counts[idx] = (counts[idx] || 0) + 1;
+    });
+
+    const vowelPositions = Object.keys(counts).map(Number);
+    if (vowelPositions.length >= 2) {
+      questions.push({
+        kind: "firstVowelPos",
+        positions: vowelPositions.sort((a, b) => a - b)
+      });
+    }
+  }
+
+  /* 2) LETRA EXATA (maior entropia) */
+  let bestLetterPos = null;
+  let bestLetterEntropy = 0;
+
+  for (let pos = 0; pos < lexLength; pos++) {
+    if (lexKnownLetters[pos]) continue;
+
+    const set = new Set(all.map(c => c.clean[pos]));
+    if (set.size <= 1) continue;
+
+    if (set.size > bestLetterEntropy) {
+      bestLetterEntropy = set.size;
+      bestLetterPos = pos;
+    }
+  }
+
+  if (bestLetterPos !== null) {
+    questions.push({
+      kind: "letterExact",
+      pos: bestLetterPos
+    });
+  }
+
+  /* 3) SHAPE (R / C / M) */
+  let bestShapePos = null;
+  let bestShapeEntropy = 0;
+
+  for (let pos = 0; pos < lexLength; pos++) {
+    if (lexKnownShapes[pos] || lexKnownLetters[pos]) continue;
+
+    const set = new Set(all.map(c => letterShape(c.clean[pos])));
+    if (set.size <= 1) continue;
+
+    if (set.size > bestShapeEntropy) {
+      bestShapeEntropy = set.size;
+      bestShapePos = pos;
+    }
+  }
+
+  if (bestShapePos !== null) {
+    questions.push({
+      kind: "shape",
+      pos: bestShapePos
+    });
+  }
+
+  if (questions.length === 0) {
+    return showResults(all.slice(0, 5));
+  }
+
+  let q =
+    questions.find(x => x.kind === "firstVowelPos") ||
+    questions.find(x => x.kind === "letterExact") ||
+    questions[0];
+
+  // --- Pergunta: posição da primeira vogal ---
+  if (q.kind === "firstVowelPos") {
+    const grid = $("vowelPosGrid");
+    if (!grid) return;
+
+    grid.innerHTML = "";
+
+    q.positions.forEach(pos => {
+      const b = document.createElement("button");
+      b.textContent = pos + 1;
+      b.onclick = () => {
+        lexFirstVowelPos = pos;
+        proceedNextLexQuestion();
+      };
+      grid.appendChild(b);
+    });
+
+    return openOnly("lexiconVowelPanel");
+  }
+
+  // --- Pergunta: letra exata ---
+  if (q.kind === "letterExact") {
+    lexCurrentPos = q.pos;
+    if ($("lexiconLetterPos")) {
+      $("lexiconLetterPos").innerText = q.pos + 1;
+    }
+    buildLexiconLetterGrid();
+    return openOnly("lexiconLetterPanel");
+  }
+
+  // --- Pergunta: shape ---
+  if (q.kind === "shape") {
+    lexCurrentPos = q.pos;
+    if ($("lexiconShapePos")) {
+      $("lexiconShapePos").innerText = q.pos + 1;
+    }
+    return openOnly("lexiconShapePanel");
+  }
+}
+
+/* ============================================================
+   RESPOSTAS DAS PERGUNTAS DO LEXICON
+   ============================================================ */
+
+function letterShape(ch) {
+  ch = ch.toLowerCase();
+  if ("cgoqsu".includes(ch)) return "C";
+  if ("bdjpr".includes(ch)) return "M";
+  return "R";
+}
+
+function firstVowelIndex(s) {
+  for (let i = 0; i < s.length; i++)
+    if ("aeiou".includes(s[i])) return i;
+  return -1;
+}
+
+function lexiconAnswerShape(shape) {
+  lexKnownShapes[lexCurrentPos] = shape;
+  lexCurrentPos = null;
+  proceedNextLexQuestion();
+}
+
+function buildLexiconLetterGrid() {
+  const grid = $("lexiconLetterGrid");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(L => {
+    const b = document.createElement("button");
+    b.innerText = L;
+    b.onclick = () => {
+      lexKnownLetters[lexCurrentPos] = L.toLowerCase();
+      lexCurrentPos = null;
+      proceedNextLexQuestion();
+    };
+    grid.appendChild(b);
+  });
+}
+
+function lexiconAnswerBinary(yes) {
+  if (!lexBinaryQuestion) return;
+  lexFirstVowelHalf = { half: lexBinaryQuestion.half, isBefore: yes };
+  lexBinaryQuestion = null;
+  proceedNextLexQuestion();
+}
+
+/* ============================================================
+   GESTOS GLOBAIS PARA PERFORMANCE
+   ============================================================ */
+
+document.addEventListener("touchstart", function (e) {
+  if (document.body.classList.contains("performance")) {
+    if (e.touches.length === 2) {
+      window._twoFingerStartY = e.touches[0].clientY;
+    }
+
+    if (e.touches.length === 1) {
+      window._oneFingerStartX = e.touches[0].clientX;
+    }
+  }
+});
+
+document.addEventListener("touchend", function (e) {
+  if (!document.body.classList.contains("performance")) return;
+
+  // DOIS DEDOS → VOLTA PARA A ESCOLHA DO MODO
+  if (window._twoFingerStartY !== undefined && e.changedTouches.length > 0) {
+    const endY = e.changedTouches[0].clientY;
+    const diffY = endY - window._twoFingerStartY;
+
+    if (diffY > 40) {
+      homeStep = 2;
+      openOnly("home");
+      show("home-step2");
+    }
+
+    window._twoFingerStartY = undefined;
+  }
+
+  // SWIPE ESQUERDA → VOLTAR UMA ETAPA
+  if (window._oneFingerStartX !== undefined && e.changedTouches.length > 0) {
+    const endX = e.changedTouches[0].clientX;
+    const diffX = endX - window._oneFingerStartX;
+
+    if (diffX < -40) {
+      goBackOneStep();
+    }
+    window._oneFingerStartX = undefined;
+  }
+});
+
+/* ============================================================
+   FUNÇÃO: VOLTAR UMA ETAPA EM QUALQUER MODO
+   ============================================================ */
+
+function goBackOneStep() {
+
+  /* -------------- SWIPE MODE -------------- */
+  if ($("swipePanel") && $("swipePanel").classList.contains("visible")) {
+    if (swipeStage === "letters") {
+      swipeStage = "length";
+      swipeLetterIndex = 0;
+      openOnly("swipePanel");
+      show("swipe-step-length");
+      hide("swipe-step-gender");
+      hide("swipe-step-letters");
+      updateHUD();
+      return;
+    }
+    if (swipeStage === "length") {
+      swipeStage = "gender";
+      openOnly("swipePanel");
+      show("swipe-step-gender");
+      hide("swipe-step-length");
+      hide("swipe-step-letters");
+      updateHUD();
+      return;
+    }
+    if (swipeStage === "gender") {
+      homeStep = 2;
+      openOnly("home");
+      show("home-step2");
+      return;
+    }
+  }
+
+  /* -------------- PIGBACK MODE -------------- */
+  if ($("pigbackPanel") && $("pigbackPanel").classList.contains("visible")) {
+    if (pigStage === "letters") {
+      pigStage = "length";
+      openOnly("pigbackPanel");
+      show("pig-step-length");
+      hide("pig-step-gender");
+      hide("pig-step-letters");
+      updateHUD();
+      return;
+    }
+    if (pigStage === "length") {
+      pigStage = "gender";
+      openOnly("pigbackPanel");
+      show("pig-step-gender");
+      hide("pig-step-length");
+      hide("pig-step-letters");
+      updateHUD();
+      return;
+    }
+    if (pigStage === "gender") {
+      homeStep = 2;
+      openOnly("home");
+      show("home-step2");
+      return;
+    }
+  }
+
+  /* -------------- GRADE MODE -------------- */
+  if ($("gradeSetupPanel") && $("gradeSetupPanel").classList.contains("visible")) {
+    if (gradeStage === "length") {
+      gradeStage = "gender";
+      openOnly("gradeSetupPanel");
+      show("grade-step-gender");
+      hide("grade-step-length");
+      updateHUD();
+      return;
+    }
+    if (gradeStage === "gender") {
+      homeStep = 2;
+      openOnly("home");
+      show("home-step2");
+      return;
+    }
+  }
+
+  /* -------------- GRADE GRID -------------- */
+  if ($("gradeLettersPanel") && $("gradeLettersPanel").classList.contains("visible")) {
+    gradeStage = "length";
+    openOnly("gradeSetupPanel");
+    show("grade-step-length");
+    hide("grade-step-gender");
+    updateHUD();
+    return;
+  }
+
+  /* -------------- LEXICON VC -------------- */
+  if ($("lexiconVCPanel") && $("lexiconVCPanel").classList.contains("visible")) {
+    if (lexStep === 2) {
+      lexStep = 1;
+      show("lex-step1");
+      hide("lex-step2");
+      updateHUD();
+      return;
+    }
+    if (lexStep === 1) {
+      homeStep = 2;
+      openOnly("home");
+      show("home-step2");
+      return;
+    }
+  }
+
+  /* -------------- LEXICON PERGUNTAS -------------- */
+  if (
+    ($("lexiconVowelPanel") && $("lexiconVowelPanel").classList.contains("visible")) ||
+    ($("lexiconShapePanel") && $("lexiconShapePanel").classList.contains("visible")) ||
+    ($("lexiconLetterPanel") && $("lexiconLetterPanel").classList.contains("visible")) ||
+    ($("lexiconBinaryPanel") && $("lexiconBinaryPanel").classList.contains("visible"))
+  ) {
+    openOnly("lexiconVCPanel");
+    hide("lex-step1");
+    show("lex-step2");
+    updateHUD();
+    return;
+  }
+
+  /* -------------- RESULTADOS -------------- */
+  if ($("resultPanel") && $("resultPanel").classList.contains("visible")) {
+    homeStep = 2;
+    openOnly("home");
+    show("home-step2");
+    return;
+  }
+}
+
+/* =======================
+   INICIALIZAÇÃO COMPLETA
+   ======================= */
+
+(async function init() {
+  const ok = await checkLicenseBeforeStart();
+  if (!ok) return;
+
+  // CARREGAR O AXIS NORMALMENTE
+  document.body.classList.add("performance");
+  homeStep = 1;
+  openOnly("home");
+})();
+ // <<< sua lista entra aqui
 
 /* ============================================================
    LICENÇA / FINGERPRINT
