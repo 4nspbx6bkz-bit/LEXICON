@@ -3641,34 +3641,7 @@ function setModePerformance() {
   updateHomeUI();
 }
 
-/* ============================================================
-   LISTA DE NOMES
-   (COLE SUA LISTA COMPLETA EM RAW_NAMES)
-   ============================================================ */
 
-const RAW_NAMES = [
-  // Exemplo:
-  // "Arthur - M",
-  // "Maria - F",
-  // ...
-];
-
-const ALPHABET = "abcdefghijklmnopqrstuvwxyz";
-
-const NAMES = RAW_NAMES.map(n => {
-  const parts = n.split("-");
-  const name = parts[0].trim();
-  const gender = (parts[1] || "").trim();
-  return {
-    raw: name,
-    clean: normalize(name).replace(/\s+/g, ""),
-    gender
-  };
-});
-
-/* ============================================================
-   ALGORITMO DE MATCH
-   ============================================================ */
 
 function findApproxCandidates(gender, length, letters, pigFirstReal) {
   const win = 6; // range máximo pra frente
@@ -4776,4 +4749,11 @@ function showResults(list) {
   box.innerText = list.length
     ? list.map(c => c.raw).join("\n")
     : "Nenhum nome encontrado!";
-}
+   (async function init() {
+  const ok = await checkLicenseBeforeStart();
+  if (!ok) return;
+   }
+  // NÃO ativa performance automaticamente
+  homeStep = 1;
+  openOnly("home");
+})();
