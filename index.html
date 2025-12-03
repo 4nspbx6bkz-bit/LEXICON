@@ -1,70 +1,64 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <title>AXIS</title>
 
-<!-- PWA -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#000000">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="AXIS">
-<link rel="apple-touch-icon" href="icon512.png">
+<link rel="manifest" href="manifest.json" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#000" />
 
-<link rel="stylesheet" href="styles.css">
-
-<script defer src="script.js"></script>
+<link rel="stylesheet" href="styles.css" />
 
 <script>
-// registra o service worker
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker
-    .register("sw.js")
-    .catch(e => console.log("Erro SW:", e));
-}
+document.addEventListener("DOMContentLoaded", () => {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker
+      .register("sw.js")
+      .then(() => console.log("SW registrado!"))
+      .catch(err => console.error("Erro no SW:", err));
+  }
+});
 </script>
+
 </head>
 
 <body>
 
-<!-- ------------------- HOME ------------------- -->
-<div id="home" class="panel visible">
-  <div id="home-center">
+<div id="home" class="panel visible center">
+  <div id="home-step1" class="center-col">
+    <button onclick="setModePerformance()">Performance Mode</button>
+    <button onclick="setModeTraining()">Training Mode</button>
+  </div>
 
-    <h1 class="logo">AXIS</h1>
-
-    <button class="menu-btn" onclick="setModePerformance()">Performance Mode</button>
-    <button class="menu-btn" onclick="setModeTraining()">Training Mode</button>
-
-    <div id="home-step2" class="submenu">
-
-      <button class="sub-btn" onclick="startSwipe()">Swipe Mode</button>
-      <button class="sub-btn" onclick="startPigback()">Pigback Mode</button>
-      <button class="sub-btn" onclick="startGrade()">Grade Mode</button>
-      <button class="sub-btn" onclick="startLexicon()">Lexicon</button>
-
-    </div>
-
+  <div id="home-step2" class="center-col" style="display:none">
+    <button onclick="startSwipe()">Swipe Mode</button>
+    <button onclick="startPigback()">Pigback Mode</button>
+    <button onclick="startGrade()">Grade Mode</button>
+    <button onclick="startLexicon()">Lexicon Mode</button>
   </div>
 </div>
 
-<!-- Painéis dos modos -->
+<!-- PAINÉIS DE MODOS -->
 <div id="swipePanel" class="panel"></div>
 <div id="pigbackPanel" class="panel"></div>
 <div id="gradeSetupPanel" class="panel"></div>
 <div id="gradeLettersPanel" class="panel"></div>
+
 <div id="lexiconVCPanel" class="panel"></div>
 <div id="lexiconVowelPanel" class="panel"></div>
 <div id="lexiconShapePanel" class="panel"></div>
 <div id="lexiconLetterPanel" class="panel"></div>
 <div id="lexiconBinaryPanel" class="panel"></div>
-<div id="resultPanel" class="panel"><pre id="resultBox"></pre></div>
 
-<!-- HUD -->
+<div id="resultPanel" class="panel">
+  <pre id="resultBox"></pre>
+</div>
+
 <div id="hud"></div>
 
+<script src="script.js"></script>
 </body>
 </html>
