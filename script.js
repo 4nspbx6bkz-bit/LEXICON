@@ -3368,6 +3368,7 @@ function goBackOneStep() {
     show("home-step2");
     return;
   }
+}
 window.addEventListener("load", async () => {
   const saved = localStorage.getItem("axis_license");
 
