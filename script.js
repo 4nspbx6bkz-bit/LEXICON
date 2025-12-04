@@ -3390,7 +3390,7 @@ window.addEventListener("load", async () => {
     setupLicenseForm();
   }
 });
-
+ 
 function startAxisApp() {
   // TODO: coloque aqui o que seu app faz ao iniciar.
   // Exemplo simples:
