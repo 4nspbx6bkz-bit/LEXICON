@@ -1,4 +1,46 @@
-/* ============================================================
+function getFingerprint() {
+  let fp = localStorage.getItem("axis_fp");
+  if (!fp) {
+    if (crypto.randomUUID) {
+      fp = crypto.randomUUID();
+    } else {
+      fp = Date.now() + "-" + Math.random().toString(16).slice(2);
+    }
+    localStorage.setItem("axis_fp", fp);
+  }
+  return fp;
+}
+
+async function validateLicense(license) {
+  const fp = getFingerprint();
+
+  try {
+    const resp = await fetch(
+      "https://axis-license-checker.d2bz92x2cp.workers.dev/check" +
+      "?license=" + encodeURIComponent(license) +
+      "&fp=" + encodeURIComponent(fp)
+    );
+
+    const data = await resp.json();
+
+    if (!data.ok) {
+      let msg = "Licença inválida.";
+
+      if (data.error === "notfound")     msg = "Licença não existe.";
+      if (data.error === "inactive")     msg = "Licença desativada.";
+      if (data.error === "device_limit") msg = "Limite de dispositivos atingido.";
+
+      showLicenseError(msg);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error("Erro na validação da licença:", err);
+    showLicenseError("Erro ao validar licença. Verifique sua internet.");
+    return false;
+  }
+}/* ============================================================
    AXIS – Nomes Mágicos
    Swipe / Pigbacking / Grade / Lexicon (simples)
    ============================================================ */
