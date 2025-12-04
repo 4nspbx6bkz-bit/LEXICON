@@ -3344,7 +3344,7 @@ function goBackOneStep() {
       show("home-step2");
       return;
     }
-
+  }
 
   /* -------------- LEXICON PERGUNTAS -------------- */
   if (
