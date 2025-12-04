@@ -3397,4 +3397,3 @@ function startAxisApp() {
   // Exemplo simples:
   openOnly("home");
 }
-
