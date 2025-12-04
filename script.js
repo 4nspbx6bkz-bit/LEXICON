@@ -1,46 +1,5 @@
-function getFingerprint() {
-  let fp = localStorage.getItem("axis_fp");
-  if (!fp) {
-    if (crypto.randomUUID) {
-      fp = crypto.randomUUID();
-    } else {
-      fp = Date.now() + "-" + Math.random().toString(16).slice(2);
-    }
-    localStorage.setItem("axis_fp", fp);
-  }
-  return fp;
-}
 
-async function validateLicense(license) {
-  const fp = getFingerprint();
-
-  try {
-    const resp = await fetch(
-      "https://axis-license-checker.d2bz92x2cp.workers.dev/check" +
-      "?license=" + encodeURIComponent(license) +
-      "&fp=" + encodeURIComponent(fp)
-    );
-
-    const data = await resp.json();
-
-    if (!data.ok) {
-      let msg = "Licença inválida.";
-
-      if (data.error === "notfound")     msg = "Licença não existe.";
-      if (data.error === "inactive")     msg = "Licença desativada.";
-      if (data.error === "device_limit") msg = "Limite de dispositivos atingido.";
-
-      showLicenseError(msg);
-      return false;
-    }
-
-    return true;
-  } catch (err) {
-    console.error("Erro na validação da licença:", err);
-    showLicenseError("Erro ao validar licença. Verifique sua internet.");
-    return false;
-  }
-}/* ============================================================
+/* ============================================================
    AXIS – Nomes Mágicos
    Swipe / Pigbacking / Grade / Lexicon (simples)
    ============================================================ */
@@ -76,6 +35,78 @@ function openOnly(id) {
   const el = $(id);
   if (el) el.classList.add("visible");
   updateHUD(); // sempre atualiza HUD quando troca painel
+}
+
+function getFingerprint() {
+  let fp = localStorage.getItem("axis_fp");
+  if (!fp) {
+    fp = crypto.randomUUID ? crypto.randomUUID() : (Date.now() + "-" + Math.random());
+    localStorage.setItem("axis_fp", fp);
+  }
+  return fp;
+}
+async function validateLicense(license) {
+  const fp = getFingerprint();
+
+  try {
+    const resp = await fetch(
+      "https://axis-license-checker.d2bz92x2cp.workers.dev/check" +
+      "?license=" + encodeURIComponent(license) +
+      "&fp=" + encodeURIComponent(fp)
+    );
+
+    const data = await resp.json();
+
+    if (!data.ok) {
+      let msg = "Licença inválida.";
+
+      if (data.error === "notfound") msg = "Licença não existe.";
+      if (data.error === "inactive") msg = "Licença desativada.";
+      if (data.error === "device_limit") msg = "Limite de dispositivos atingido.";
+
+      document.getElementById("license-error").textContent = msg;
+      return false;
+    }
+
+    return true;
+
+  } catch (e) {
+    document.getElementById("license-error").textContent =
+      "Erro ao validar licença. Verifique sua internet.";
+    return false;
+  }
+}
+function showLicenseOverlay() {
+  document.getElementById("license-overlay").style.display = "flex";
+}
+
+function hideLicenseOverlay() {
+  document.getElementById("license-overlay").style.display = "none";
+}
+function setupLicenseForm() {
+  const btn = document.getElementById("license-button");
+  const input = document.getElementById("license-input");
+
+  btn.onclick = async () => {
+    const lic = input.value.trim();
+    if (!lic) {
+      document.getElementById("license-error").textContent = "Digite sua licença.";
+      return;
+    }
+
+    document.getElementById("license-error").textContent = "Validando...";
+
+    const ok = await validateLicense(lic);
+    if (ok) {
+      localStorage.setItem("axis_license", lic);
+      hideLicenseOverlay();
+      startAxisApp();
+    }
+  };
+
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") btn.click();
+  });
 }
 
 /* ============================================================
@@ -3337,4 +3368,31 @@ function goBackOneStep() {
     show("home-step2");
     return;
   }
+window.addEventListener("load", async () => {
+  const saved = localStorage.getItem("axis_license");
+
+  // Se nunca ativou
+  if (!saved) {
+    showLicenseOverlay();
+    setupLicenseForm();
+    return;
+  }
+
+  // Tinha licença salva → validar novamente
+  const ok = await validateLicense(saved);
+
+  if (ok) {
+    hideLicenseOverlay();
+    startAxisApp();
+  } else {
+    showLicenseOverlay();
+    setupLicenseForm();
+  }
+});
+
+
+function startAxisApp() {
+  // TODO: coloque aqui o que seu app faz ao iniciar.
+  // Exemplo simples:
+  openOnly("home");
 }
