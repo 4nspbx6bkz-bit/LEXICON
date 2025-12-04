@@ -189,4 +189,23 @@ if (location.protocol === "https:" || location.protocol === "http:") {
 <div id="hud"></div>
 
 </body>
+
+  <!-- TELA DE LICENÇA -->
+<div id="license-overlay" style="display:flex;flex-direction:column;justify-content:center;align-items:center;position:fixed;inset:0;background:black;color:white;z-index:9999;padding:20px;">
+  <h2 style="margin-bottom:10px;">AXIS – Ativação</h2>
+  <p style="margin-bottom:15px;text-align:center;">Digite sua licença AXIS para liberar o aplicativo.</p>
+
+  <input id="license-input" 
+         type="text" 
+         placeholder="EX: ARTHUR-001"
+         style="padding:10px;border-radius:8px;border:none;width:80%;max-width:300px;text-align:center;font-size:18px;margin-bottom:10px;">
+
+  <button id="license-button"
+          style="padding:10px 20px;border-radius:8px;border:none;background:#f5c453;color:black;font-size:18px;font-weight:bold;width:80%;max-width:300px;">
+    Ativar
+  </button>
+
+  <p id="license-error" style="color:#ff6b6b;margin-top:15px;"></p>
+</div>
+  
 </html>
