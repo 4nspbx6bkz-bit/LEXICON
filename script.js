@@ -3413,95 +3413,131 @@ function startFallbackFromNoNames() {
   startFallbackWithConfig("noname");
 }
 
-/* ---------- Lógica genérica ---------- */
+/* ---------------------------------------------------------------
+   FALLBACK UNIVERSAL – NOVO SISTEMA COMPATÍVEL COM iPHONE
+---------------------------------------------------------------- */
 
+let recognition = null;
+let isListening = false;
+
+
+/* ----- Substitui startFallbackWithConfig ----- */
 function startFallbackWithConfig(kind) {
-  const cfg = (kind === "standalone") ? fallbackStandaloneConfig : fallbackNoNameConfig;
+    const cfg = (kind === "standalone")
+        ? fallbackStandaloneConfig
+        : fallbackNoNameConfig;
 
-  const trigger = (cfg.trigger || "").toLowerCase().trim();
-  const delaySec = parseInt(cfg.delay || 0, 10) || 0;
-  const status = $("fallbackStatus");
+    const trigger = (cfg.trigger || "").toLowerCase().trim();
+    const delaySec = parseInt(cfg.delay || 0, 10) || 0;
 
-  openOnly("fallbackPanel");
-  if (status) {
-    if (delaySec > 0) {
-      status.innerText = `Aguardando ${delaySec}s para escutar...`;
-    } else {
-      status.innerText = "Preparando reconhecimento de voz...";
-    }
-  }
-
-  setTimeout(() => {
-    startSpeechRecognitionWithConfig(trigger);
-  }, delaySec * 1000);
+    prepareFallbackStart(delaySec, trigger);
 }
 
-function startSpeechRecognitionWithConfig(trigger) {
-  const status = $("fallbackStatus");
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  if (!SR) {
-    if (status) status.innerText = "Reconhecimento de voz não suportado neste dispositivo.";
-    return;
-  }
+/* ----- Nova função: prepara início com delay ----- */
+function prepareFallbackStart(delay, triggerWord) {
+    openOnly("fallbackPanel");
 
-  const rec = new SR();
-  rec.lang = "pt-BR";
-  rec.interimResults = false;
-  rec.maxAlternatives = 1;
+    const status = $("fallbackStatus");
+    status.innerText = delay > 0
+        ? `Aguarde ${delay} segundos…`
+        : "Toque para iniciar";
 
-  rec.onstart = () => {
-    if (status) status.innerText = "Escutando...";
-  };
+    // Safari exige interação do usuário
+    status.onclick = () => {
+        startFallbackRecognition(triggerWord);
+    };
 
-  rec.onerror = (e) => {
-    if (status) status.innerText = "Erro no reconhecimento: " + e.error;
-  };
-
-  rec.onresult = (event) => {
-  let text = "";
-  try {
-    text = event.results[0][0].transcript || "";
-  } catch (e) {
-    text = "";
-  }
-
-  text = text.toLowerCase().trim();
-  if (!text) {
-    if (status) status.innerText = "Não entendi. Tente novamente.";
-    return;
-  }
-
-  let query = "";
-
-  // === NOVA LÓGICA CORRETA ===
-  if (trigger) {
-    const trig = trigger.toLowerCase().trim();
-    const idx = text.indexOf(trig);
-
-    if (idx >= 0) {
-      const after = text.slice(idx + trig.length).trim();
-      const parts = after.split(/\s+/);
-
-      // SE EXISTE ALGUMA PALAVRA DEPOIS DO GATILHO → USAR SOMENTE ELA
-      if (parts.length > 0 && parts[0] !== "") {
-        query = parts[0];
-      }
+    if (delay > 0) {
+        setTimeout(() => {
+            status.innerText = "Toque para iniciar";
+        }, delay * 1000);
     }
-  }
-
-  // Se não teve gatilho OU não achou a palavra seguinte, não pesquise tudo
-  // Em vez disso, peça para repetir
-  if (!query) {
-    if (status) status.innerText = "Diga a frase com a palavra gatilho.";
-    return;
-  }
-
-  if (status) status.innerText = `Abrindo: ${query}`;
-  const url = "https://www.google.com/search?q=" + encodeURIComponent(query);
-  window.location.href = url;
-};
-
-  rec.start();
 }
- 
+
+
+/* ----- Nova função principal compatível com iPhone ----- */
+function startFallbackRecognition(triggerWord) {
+
+    if (isListening) return; // evita AbortError
+    isListening = true;
+
+    try {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SR) {
+            $("fallbackStatus").innerText =
+                "Reconhecimento de voz não é suportado neste dispositivo.";
+            isListening = false;
+            return;
+        }
+
+        recognition = new SR();
+        recognition.lang = "pt-BR";
+        recognition.interimResults = false;
+        recognition.continuous = false;
+
+        recognition.onstart = () => {
+            $("fallbackStatus").innerText = "Ouvindo…";
+        };
+
+        recognition.onerror = () => {
+            $("fallbackStatus").innerText =
+                "Erro. Toque para tentar novamente.";
+            isListening = false;
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+        };
+
+        recognition.onresult = (event) => {
+            isListening = false;
+
+            let text = "";
+            try {
+                text = event.results[0][0].transcript.toLowerCase().trim();
+            } catch (e) {
+                $("fallbackStatus").innerText =
+                    "Não entendi. Toque para repetir.";
+                return;
+            }
+
+            const word = extractWordAfterTrigger(text, triggerWord);
+
+            if (!word) {
+                $("fallbackStatus").innerText =
+                    "Fale novamente usando a palavra gatilho.";
+                return;
+            }
+
+            $("fallbackStatus").innerText = `Abrindo: ${word}`;
+            window.location.href =
+                "https://www.google.com/search?q=" + encodeURIComponent(word);
+        };
+
+        recognition.start();
+
+    } catch (err) {
+        $("fallbackStatus").innerText =
+            "Erro ao iniciar. Toque novamente.";
+        isListening = false;
+    }
+}
+
+
+/* ----- Extrai APENAS a palavra após a trigger ----- */
+function extractWordAfterTrigger(text, trigger) {
+    if (!trigger) return null;
+
+    text = text.toLowerCase();
+    trigger = trigger.toLowerCase();
+
+    const i = text.indexOf(trigger);
+    if (i < 0) return null;
+
+    let after = text.slice(i + trigger.length).trim();
+    let parts = after.split(/\s+/);
+
+    return parts[0] || null;
+}
