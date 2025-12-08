@@ -176,32 +176,26 @@ body.performance #lexiconVCPanel .btn {
   display: none !important;
 }
 
-/* ===== EXCEÇÕES (coisas que DEVEM aparecer) ===== */
+/* ===== GRADE — PERFORMANCE ===== */
 
-/* GRADE das letras */
-/* ============================= GRADE — PERFORMANCE ============================= */
-
-/* Mostrar somente a grade */
 body.performance #gradeLettersPanel .letter-grid {
   display: grid !important;
 }
 
-/* Todos os botões escondidos */
 body.performance #gradeLettersPanel button {
   display: none !important;
 }
 
-/* Mas manter os botões *internos* da grade visíveis */
 body.performance #gradeLettersPanel .letter-grid button {
   display: block !important;
 }
 
-/* Esconder completamente o título */
 body.performance #gradeLettersPanel .mode-title {
   display: none !important;
 }
 
-/* LEXICON — perguntas */
+/* ===== LEXICON — PERFORMANCE ===== */
+
 body.performance #lexiconVowelPanel .mode-title,
 body.performance #lexiconShapePanel .mode-title,
 body.performance #lexiconLetterPanel .mode-title,
@@ -219,7 +213,7 @@ body.performance #lexiconShapePanel .shape-row {
   display: grid !important;
 }
 
-/* RESULTADOS */
+/* RESULTADOS PERFORMANCE */
 body.performance #resultPanel .result-box {
   display: block !important;
   position: fixed;
@@ -233,8 +227,10 @@ body.performance #resultPanel .result-box {
   font-size: 20px;
 }
 
+/* IMPORTANTE:
+   Esconde botões normais, mas NÃO esconde o botão de Fallback */
 body.performance #resultPanel .mode-title,
-body.performance #resultPanel button {
+body.performance #resultPanel .btn:not(#fallbackResultBtn) {
   display: none !important;
 }
 
@@ -259,4 +255,83 @@ body.performance #resultPanel button {
   font-weight: 600;
   min-width: 24px;
   text-align: center;
+}
+
+/* ========================== SETTINGS PANEL ========================== */
+
+#settingsPanel input {
+  width: 100%;
+  max-width: 280px;
+  padding: 10px;
+  margin: 4px 0 10px;
+  border-radius: 10px;
+  border: 1px solid #444;
+  background: #111;
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ========================== FALLBACK RESULT BUTTON ========================== */
+
+#fallbackResultBtn {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  display: none; /* só aparece quando não há nomes */
+}
+
+html, body {
+  touch-action: none;
+  overscroll-behavior: none;
+}
+body {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+
+
+/* ===========================================
+   BOTÕES DOURADOS (USADOS APENAS NO MENU)
+   =========================================== */
+
+.btn-gold {
+  width: 100%;
+  max-width: 260px;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border-radius: 999px;
+  
+  background: linear-gradient(145deg, #141414, #0a0a0a);
+  border: 2px solid #c9a14b;
+
+  color: #f5d68b;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.5px;
+
+  box-shadow:
+    0 0 12px #c9a14b55,
+    0 0 20px #c9a14b33 inset;
+
+  transition: 0.2s ease;
+}
+
+.btn-gold:hover {
+  box-shadow:
+    0 0 18px #e4c16d88,
+    0 0 30px #d8b35f55 inset;
+  border-color: #e4c16d;
+  color: #ffe6b0;
+}
+
+.btn-gold:active {
+  transform: scale(0.97);
+  box-shadow:
+    0 0 10px #e4c16d,
+    0 0 25px #e4c16d inset;
 }
