@@ -3395,33 +3395,12 @@ function saveFallbackConfigs() {
   goHome(true);
 }
 
-/* ---------- Painel Fallback Mode no menu ---------- */
-
-function openFallbackPanel() {
-  const status = $("fallbackStatus");
-  if (status) status.innerText = 'Toque em "Iniciar" para começar.';
-  openOnly("fallbackPanel");
-}
-
-/* ---------- Entradas para os dois tipos ---------- */
-
-function startFallbackStandalone() {
-  startFallbackWithConfig("standalone");
-}
-
-function startFallbackFromNoNames() {
-  startFallbackWithConfig("noname");
-}
-
-/* ---------------------------------------------------------------
-   FALLBACK UNIVERSAL – NOVO SISTEMA COMPATÍVEL COM iPHONE
----------------------------------------------------------------- */
+/* ---------- Lógica genérica (SUBSTITUIR A PARTIR DAQUI) ---------- */
 
 let recognition = null;
 let isListening = false;
 
-
-/* ----- Substitui startFallbackWithConfig ----- */
+/* Inicia fallback conforme tipo (standalone ou noname) */
 function startFallbackWithConfig(kind) {
     const cfg = (kind === "standalone")
         ? fallbackStandaloneConfig
@@ -3433,21 +3412,25 @@ function startFallbackWithConfig(kind) {
     prepareFallbackStart(delaySec, trigger);
 }
 
-
-/* ----- Nova função: prepara início com delay ----- */
+/* Prepara a tela de fallback com delay + toque obrigatório no iPhone */
 function prepareFallbackStart(delay, triggerWord) {
+
     openOnly("fallbackPanel");
 
     const status = $("fallbackStatus");
-    status.innerText = delay > 0
-        ? `Aguarde ${delay} segundos…`
-        : "Toque para iniciar";
 
-    // Safari exige interação do usuário
+    if (delay > 0) {
+        status.innerText = `Aguarde ${delay} segundos…`;
+    } else {
+        status.innerText = "Toque para iniciar";
+    }
+
+    // Apenas inicia com toque do usuário (Safari exige)
     status.onclick = () => {
         startFallbackRecognition(triggerWord);
     };
 
+    // Após delay, mostra "toque para iniciar"
     if (delay > 0) {
         setTimeout(() => {
             status.innerText = "Toque para iniciar";
@@ -3455,19 +3438,17 @@ function prepareFallbackStart(delay, triggerWord) {
     }
 }
 
-
-/* ----- Nova função principal compatível com iPhone ----- */
+/* Inicia o reconhecimento de voz corretamente */
 function startFallbackRecognition(triggerWord) {
 
-    if (isListening) return; // evita AbortError
+    // Evita start duplo (causa AbortError no iPhone)
+    if (isListening) return;
     isListening = true;
 
     try {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-
         if (!SR) {
-            $("fallbackStatus").innerText =
-                "Reconhecimento de voz não é suportado neste dispositivo.";
+            $("fallbackStatus").innerText = "Reconhecimento de voz não suportado.";
             isListening = false;
             return;
         }
@@ -3482,8 +3463,7 @@ function startFallbackRecognition(triggerWord) {
         };
 
         recognition.onerror = () => {
-            $("fallbackStatus").innerText =
-                "Erro. Toque para tentar novamente.";
+            $("fallbackStatus").innerText = "Erro. Toque para tentar novamente.";
             isListening = false;
         };
 
@@ -3498,16 +3478,16 @@ function startFallbackRecognition(triggerWord) {
             try {
                 text = event.results[0][0].transcript.toLowerCase().trim();
             } catch (e) {
-                $("fallbackStatus").innerText =
-                    "Não entendi. Toque para repetir.";
+                $("fallbackStatus").innerText = "Não entendi. Toque para repetir.";
                 return;
             }
 
+            // Extrai apenas a primeira palavra após a frase gatilho
             const word = extractWordAfterTrigger(text, triggerWord);
 
             if (!word) {
                 $("fallbackStatus").innerText =
-                    "Fale novamente usando a palavra gatilho.";
+                    "Repita usando a palavra gatilho.";
                 return;
             }
 
@@ -3519,25 +3499,23 @@ function startFallbackRecognition(triggerWord) {
         recognition.start();
 
     } catch (err) {
-        $("fallbackStatus").innerText =
-            "Erro ao iniciar. Toque novamente.";
+        $("fallbackStatus").innerText = "Erro ao iniciar. Toque novamente.";
         isListening = false;
     }
 }
 
-
-/* ----- Extrai APENAS a palavra após a trigger ----- */
+/* Extrai SOMENTE a palavra imediatamente após a trigger */
 function extractWordAfterTrigger(text, trigger) {
     if (!trigger) return null;
 
     text = text.toLowerCase();
     trigger = trigger.toLowerCase();
 
-    const i = text.indexOf(trigger);
-    if (i < 0) return null;
+    const index = text.indexOf(trigger);
+    if (index < 0) return null;
 
-    let after = text.slice(i + trigger.length).trim();
-    let parts = after.split(/\s+/);
+    const after = text.slice(index + trigger.length).trim();
+    const parts = after.split(/\s+/);
 
     return parts[0] || null;
 }
