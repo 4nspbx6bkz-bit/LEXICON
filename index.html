@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>AXIS</title>
 
 <!-- PWA -->
@@ -14,21 +14,6 @@
 
 <link rel="stylesheet" href="styles.css">
 
-<!-- Service Worker normal: só funciona em https ou GitHub Pages -->
-<script>
-if (location.protocol === "https:" || location.protocol === "http:") {
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("sw.js")
-      .then(() => console.log("SW registrado"))
-      .catch(err => console.log("Erro SW:", err));
-  }
-} else {
-  console.log("PWA desativado no modo file://");
-}
-</script>
-
-</head>
-<body class="training">
 
 <!-- ============================= HOME ============================= -->
 <div id="home" class="panel center visible">
@@ -36,8 +21,10 @@ if (location.protocol === "https:" || location.protocol === "http:") {
   <div id="home-step1">
     <div class="mode-title">AXIS</div>
     <div class="label">Modo de Uso</div>
-    <button class="btn" onclick="setModePerformance()">Performance Mode</button>
-    <button class="btn" onclick="setModeTraining()">Training Mode</button>
+<button class="btn-gold" onclick="setModePerformance()">Performance Mode</button>
+<!-- NOVO: botão Configurações -->
+    <button class="btn small" onclick="openSettings()">Configurações</button>
+
   </div>
 
   <!-- STEP 2 -->
@@ -47,6 +34,8 @@ if (location.protocol === "https:" || location.protocol === "http:") {
     <button class="btn" onclick="startPigback()">Pigbacking</button>
     <button class="btn" onclick="startGrade()">Grade Mode</button>
     <button class="btn" onclick="startLexicon()">Lexicon</button>
+    <!-- NOVO: Fallback Mode como modo de performance -->
+    <button class="btn" onclick="openFallbackPanel()">Fallback Mode</button>
     <button class="btn small" onclick="goHome(true)">Voltar</button>
   </div>
 </div>
@@ -178,9 +167,35 @@ if (location.protocol === "https:" || location.protocol === "http:") {
   </div>
 </div>
 
+<!-- ============================= FALLBACK MODE (PAINEL) ============================= -->
+<div id="fallbackPanel" class="panel center">
+  <div class="mode-title">FALLBACK MODE</div>
+  <div id="fallbackStatus" class="label">Toque em "Iniciar" para começar.</div>
+  <button class="btn" onclick="startFallbackStandalone()">Iniciar</button>
+  <button class="btn small" onclick="goHome(true)">Menu</button>
+</div>
+
+<!-- ============================= CONFIGURAÇÕES ============================= -->
+<div id="settingsPanel" class="panel center">
+  <div class="mode-title">Configurações</div>
+
+  <div class="label">Fallback Mode (standalone)</div>
+  <input id="fbStandaloneTrigger" type="text" placeholder="Palavra gatilho (ex: pensou em)">
+  <input id="fbStandaloneDelay" type="number" min="0" step="1" placeholder="Delay em segundos">
+
+  <div class="label" style="margin-top:16px;">Fallback Nenhum Nome Encontrado</div>
+  <input id="fbNoNameTrigger" type="text" placeholder="Palavra gatilho (ex: pensou em)">
+  <input id="fbNoNameDelay" type="number" min="0" step="1" placeholder="Delay em segundos">
+
+  <button class="btn" onclick="saveFallbackConfigs()">Salvar</button>
+  <button class="btn small" onclick="goHome(true)">Menu</button>
+</div>
+
 <!-- ============================= RESULTADOS ============================= -->
 <div id="resultPanel" class="panel center">
   <pre id="resultBox" class="result-box"></pre>
+  <!-- Botão Fallback quando não houver nomes -->
+  <button id="fallbackResultBtn" class="btn small" onclick="startFallbackFromNoNames()">Fallback</button>
 </div>
 
 <script src="script.js"></script>
@@ -190,22 +205,6 @@ if (location.protocol === "https:" || location.protocol === "http:") {
 
 </body>
 
-  <!-- TELA DE LICENÇA -->
-<div id="license-overlay" style="display:flex;flex-direction:column;justify-content:center;align-items:center;position:fixed;inset:0;background:black;color:white;z-index:9999;padding:20px;">
-  <h2 style="margin-bottom:10px;">AXIS – Ativação</h2>
-  <p style="margin-bottom:15px;text-align:center;">Digite sua licença AXIS para liberar o aplicativo.</p>
+ 
 
-  <input id="license-input" 
-         type="text" 
-         placeholder="EX: ARTHUR-001"
-         style="padding:10px;border-radius:8px;border:none;width:80%;max-width:300px;text-align:center;font-size:18px;margin-bottom:10px;">
-
-  <button id="license-button"
-          style="padding:10px 20px;border-radius:8px;border:none;background:#f5c453;color:black;font-size:18px;font-weight:bold;width:80%;max-width:300px;">
-    Ativar
-  </button>
-
-  <p id="license-error" style="color:#ff6b6b;margin-top:15px;"></p>
-</div>
-  
 </html>
