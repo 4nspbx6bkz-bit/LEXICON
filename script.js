@@ -2,6 +2,7 @@
 /* ============================================================
    AXIS – Nomes Mágicos
    Swipe / Pigbacking / Grade / Lexicon (simples)
+   + Fallback Mode configurável
    ============================================================ */
 
 /* ---------- Helpers ---------- */
@@ -37,77 +38,11 @@ function openOnly(id) {
   updateHUD(); // sempre atualiza HUD quando troca painel
 }
 
-function getFingerprint() {
-  let fp = localStorage.getItem("axis_fp");
-  if (!fp) {
-    fp = crypto.randomUUID ? crypto.randomUUID() : (Date.now() + "-" + Math.random());
-    localStorage.setItem("axis_fp", fp);
-  }
-  return fp;
-}
-async function validateLicense(license) {
-  const fp = getFingerprint();
+window.onload = () => {
+  loadFallbackConfigs();
+  applyFallbackConfigToUI();
+};
 
-  try {
-    const resp = await fetch(
-      "https://axis-license-checker.d2bz92x2cp.workers.dev/check" +
-      "?license=" + encodeURIComponent(license) +
-      "&fp=" + encodeURIComponent(fp)
-    );
-
-    const data = await resp.json();
-
-    if (!data.ok) {
-      let msg = "Licença inválida.";
-
-      if (data.error === "notfound") msg = "Licença não existe.";
-      if (data.error === "inactive") msg = "Licença desativada.";
-      if (data.error === "device_limit") msg = "Limite de dispositivos atingido.";
-
-      document.getElementById("license-error").textContent = msg;
-      return false;
-    }
-
-    return true;
-
-  } catch (e) {
-    document.getElementById("license-error").textContent =
-      "Erro ao validar licença. Verifique sua internet.";
-    return false;
-  }
-}
-function showLicenseOverlay() {
-  document.getElementById("license-overlay").style.display = "flex";
-}
-
-function hideLicenseOverlay() {
-  document.getElementById("license-overlay").style.display = "none";
-}
-function setupLicenseForm() {
-  const btn = document.getElementById("license-button");
-  const input = document.getElementById("license-input");
-
-  btn.onclick = async () => {
-    const lic = input.value.trim();
-    if (!lic) {
-      document.getElementById("license-error").textContent = "Digite sua licença.";
-      return;
-    }
-
-    document.getElementById("license-error").textContent = "Validando...";
-
-    const ok = await validateLicense(lic);
-    if (ok) {
-      localStorage.setItem("axis_license", lic);
-      hideLicenseOverlay();
-      startAxisApp();
-    }
-  };
-
-  input.addEventListener("keydown", e => {
-    if (e.key === "Enter") btn.click();
-  });
-}
 
 /* ============================================================
    HUD – pequeno canto inferior esquerdo (apenas performance)
@@ -217,6 +152,7 @@ function updateHUD() {
     return;
   }
 }
+
 /* ============================================================
    HOME / MODO TREINO X PERFORMANCE
    ============================================================ */
@@ -259,7 +195,6 @@ function setModePerformance() {
 
 /* ============================================================
    LISTA DE NOMES
-   Substitua RAW_NAMES pela sua lista completa
    ============================================================ */
 
 const RAW_NAMES = [
@@ -1769,6 +1704,7 @@ const RAW_NAMES = [
   "Nathália - F",
   "Natiele - F",
   "Nayara - F",
+  "Nayme - F",
   "Nazaré - F",
   "Nazareno - M",
   "Nei - M",
@@ -2350,22 +2286,42 @@ function findApproxCandidates(gender, length, letters, pigFirstReal) {
 }
 
 /* ============================================================
-   RESULTADOS
+   RESULTADOS + BOTÃO FALLBACK
    ============================================================ */
 
 function showResults(list) {
   openOnly("resultPanel");
   const box = $("resultBox");
 
+  // Se não houver nomes
   if (!list || list.length === 0) {
     box.innerText = "Nenhum nome encontrado!";
-    return;
+  } else {
+    // Se houver nomes, lista normalmente (até 9)
+    box.innerText = list
+      .slice(0, 9)
+      .map(c => c.raw)
+      .join("\n");
   }
 
-  box.innerText = list
-    .slice(0, 9)
-    .map(c => c.raw)
-    .join("\n");
+  // SEMPRE mostra/cria o botão de Fallback na tela de resultado
+  showNoNameFallbackButton();
+}
+function showNoNameFallbackButton() {
+  let btn = $("fallbackResultBtn");
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.id = "fallbackResultBtn";
+    btn.className = "btn small";
+    btn.style.position = "absolute";
+    btn.style.bottom = "24px";
+    btn.style.right = "24px";
+    btn.innerText = "Fallback";
+    btn.onclick = startFallbackNoName;
+    $("resultPanel").appendChild(btn);
+  }
+
+  btn.style.display = "block";
 }
 
 /* ============================================================
@@ -2710,6 +2666,18 @@ function openGradeLetters() {
   updateGradeHUD();
 }
 
+// usado pelo botão “Descobrir Nome” (mantido)
+function gradeDiscover() {
+  showResults(findApproxCandidates(gradeGender, gradeLength, gradeLetters, false));
+}
+
+function resetGradeLetters() {
+  gradeLetters = ["_", "_", "_"];
+  gradeLetterIndex = 0;
+  updateGradeHUD();
+  openGradeLetters();
+}
+
 function gradeUp() {
   if (gradeStage === "gender") gradeGender = "M";
   else gradeLength = Math.min(gradeLength + 1, 12);
@@ -2727,7 +2695,7 @@ function gradeRight() {
     gradeStage = "length";
   }
   else if (gradeStage === "length") {
-    openGradeLetters(); // AGORA ABRE DIRETO A GRADE
+    openGradeLetters();
     return;
   }
 
@@ -2743,6 +2711,7 @@ function gradeLeft() {
 
 (function setupGrade() {
   const panel = $("gradeSetupPanel");
+  if (!panel) return;
   let sx = null, sy = null;
 
   panel.addEventListener("touchstart", e => {
@@ -2770,7 +2739,7 @@ function gradeLeft() {
 })();
 
 /* ============================================================
-   LEXICON — COMPLETO + INTELIGENTE + SWIPES
+   LEXICON — COMPLETO (mantido)
    ============================================================ */
 
 let lexGender = "M";
@@ -2811,7 +2780,7 @@ function startLexicon() {
   openOnly("lexiconVCPanel");
 }
 
-/* ---------------- SWIPES VC ---------------- */
+/* SWIPES VC */
 
 function lexSwipeUp() {
   if (lexStep === 1) {
@@ -2851,6 +2820,7 @@ function lexSwipeRight() {
 
 (function setupLexiconSwipe() {
   const panel = $("lexiconVCPanel");
+  if (!panel) return;
   let sx, sy;
 
   panel.addEventListener("touchstart", e => {
@@ -2874,6 +2844,7 @@ function lexSwipeRight() {
     sx = sy = null;
   });
 })();
+
 /* ============================================================
    LEXICON — BUILD INITIAL HYPOTHESES
    ============================================================ */
@@ -3184,9 +3155,8 @@ function lexiconAnswerBinary(yes) {
   proceedNextLexQuestion();
 }
 
-
 /* ============================================================
-   GESTOS GLOBAIS PARA PERFORMANCE
+   GESTOS GLOBAIS PARA PERFORMANCE (mantido)
    ============================================================ */
 
 document.addEventListener("touchstart", function (e) {
@@ -3239,8 +3209,9 @@ document.addEventListener("touchend", function (e) {
 });
 
 /* ============================================================
-   FUNÇÃO: VOLTAR UMA ETAPA EM QUALQUER MODO
+   FUNÇÃO: VOLTAR UMA ETAPA EM QUALQUER MODO (mantido)
    ============================================================ */
+
 function goBackOneStep() {
 
   /* -------------- SWIPE MODE -------------- */
@@ -3369,30 +3340,168 @@ function goBackOneStep() {
     return;
   }
 }
-window.addEventListener("load", async () => {
-  const saved = localStorage.getItem("axis_license");
 
-  // Se nunca ativou
-  if (!saved) {
-    showLicenseOverlay();
-    setupLicenseForm();
+/* ============================================================
+   FALLBACK MODE – CONFIGURAÇÕES + RECONHECIMENTO
+   ============================================================ */
+
+const FALLBACK_STANDALONE_KEY = "axis_fb_standalone";
+const FALLBACK_NONAME_KEY = "axis_fb_noname";
+
+let fallbackStandaloneConfig = { trigger: "", delay: 0 };
+let fallbackNoNameConfig = { trigger: "", delay: 0 };
+
+function loadFallbackConfigs() {
+  try {
+    const s = localStorage.getItem(FALLBACK_STANDALONE_KEY);
+    if (s) fallbackStandaloneConfig = JSON.parse(s);
+  } catch (e) {}
+
+  try {
+    const n = localStorage.getItem(FALLBACK_NONAME_KEY);
+    if (n) fallbackNoNameConfig = JSON.parse(n);
+  } catch (e) {}
+}
+
+function applyFallbackConfigToUI() {
+  const sTrig = $("fbStandaloneTrigger");
+  const sDelay = $("fbStandaloneDelay");
+  const nTrig = $("fbNoNameTrigger");
+  const nDelay = $("fbNoNameDelay");
+
+  if (sTrig) sTrig.value = fallbackStandaloneConfig.trigger || "";
+  if (sDelay) sDelay.value = fallbackStandaloneConfig.delay || 0;
+  if (nTrig) nTrig.value = fallbackNoNameConfig.trigger || "";
+  if (nDelay) nDelay.value = fallbackNoNameConfig.delay || 0;
+}
+
+function openSettings() {
+  applyFallbackConfigToUI();
+  openOnly("settingsPanel");
+}
+
+function saveFallbackConfigs() {
+  const sTrig = $("fbStandaloneTrigger")?.value.trim() || "";
+  const sDelay = parseInt($("fbStandaloneDelay")?.value || "0", 10) || 0;
+  const nTrig = $("fbNoNameTrigger")?.value.trim() || "";
+  const nDelay = parseInt($("fbNoNameDelay")?.value || "0", 10) || 0;
+
+  fallbackStandaloneConfig = { trigger: sTrig, delay: sDelay };
+  fallbackNoNameConfig = { trigger: nTrig, delay: nDelay };
+
+  localStorage.setItem(FALLBACK_STANDALONE_KEY, JSON.stringify(fallbackStandaloneConfig));
+  localStorage.setItem(FALLBACK_NONAME_KEY, JSON.stringify(fallbackNoNameConfig));
+
+  goHome(true);
+}
+
+/* ---------- Painel Fallback Mode no menu ---------- */
+
+function openFallbackPanel() {
+  const status = $("fallbackStatus");
+  if (status) status.innerText = 'Toque em "Iniciar" para começar.';
+  openOnly("fallbackPanel");
+}
+
+/* ---------- Entradas para os dois tipos ---------- */
+
+function startFallbackStandalone() {
+  startFallbackWithConfig("standalone");
+}
+
+function startFallbackFromNoNames() {
+  startFallbackWithConfig("noname");
+}
+
+/* ---------- Lógica genérica ---------- */
+
+function startFallbackWithConfig(kind) {
+  const cfg = (kind === "standalone") ? fallbackStandaloneConfig : fallbackNoNameConfig;
+
+  const trigger = (cfg.trigger || "").toLowerCase().trim();
+  const delaySec = parseInt(cfg.delay || 0, 10) || 0;
+  const status = $("fallbackStatus");
+
+  openOnly("fallbackPanel");
+  if (status) {
+    if (delaySec > 0) {
+      status.innerText = `Aguardando ${delaySec}s para escutar...`;
+    } else {
+      status.innerText = "Preparando reconhecimento de voz...";
+    }
+  }
+
+  setTimeout(() => {
+    startSpeechRecognitionWithConfig(trigger);
+  }, delaySec * 1000);
+}
+
+function startSpeechRecognitionWithConfig(trigger) {
+  const status = $("fallbackStatus");
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SR) {
+    if (status) status.innerText = "Reconhecimento de voz não suportado neste dispositivo.";
     return;
   }
 
-  // Tinha licença salva → validar novamente
-  const ok = await validateLicense(saved);
+  const rec = new SR();
+  rec.lang = "pt-BR";
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
 
-  if (ok) {
-    hideLicenseOverlay();
-    startAxisApp();
-  } else {
-    showLicenseOverlay();
-    setupLicenseForm();
+  rec.onstart = () => {
+    if (status) status.innerText = "Escutando...";
+  };
+
+  rec.onerror = (e) => {
+    if (status) status.innerText = "Erro no reconhecimento: " + e.error;
+  };
+
+  rec.onresult = (event) => {
+  let text = "";
+  try {
+    text = event.results[0][0].transcript || "";
+  } catch (e) {
+    text = "";
   }
-});
- 
-function startAxisApp() {
-  // TODO: coloque aqui o que seu app faz ao iniciar.
-  // Exemplo simples:
-  openOnly("home");
+
+  text = text.toLowerCase().trim();
+  if (!text) {
+    if (status) status.innerText = "Não entendi. Tente novamente.";
+    return;
+  }
+
+  let query = "";
+
+  // === NOVA LÓGICA CORRETA ===
+  if (trigger) {
+    const trig = trigger.toLowerCase().trim();
+    const idx = text.indexOf(trig);
+
+    if (idx >= 0) {
+      const after = text.slice(idx + trig.length).trim();
+      const parts = after.split(/\s+/);
+
+      // SE EXISTE ALGUMA PALAVRA DEPOIS DO GATILHO → USAR SOMENTE ELA
+      if (parts.length > 0 && parts[0] !== "") {
+        query = parts[0];
+      }
+    }
+  }
+
+  // Se não teve gatilho OU não achou a palavra seguinte, não pesquise tudo
+  // Em vez disso, peça para repetir
+  if (!query) {
+    if (status) status.innerText = "Diga a frase com a palavra gatilho.";
+    return;
+  }
+
+  if (status) status.innerText = `Abrindo: ${query}`;
+  const url = "https://www.google.com/search?q=" + encodeURIComponent(query);
+  window.location.href = url;
+};
+
+  rec.start();
 }
+ 
