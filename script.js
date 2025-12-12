@@ -3503,9 +3503,13 @@ function listenOnce() {
     $("fallbackStatus").innerText = `Abrindo: ${word}`;
     stopFallback();
 
-    window.location.href =
-      "https://www.google.com/search?q=" +
-      encodeURIComponent(word);
+    shutdownMicrophone(recognition);
+
+$("fallbackStatus").innerText = `Abrindo: ${word}`;
+
+window.location.href =
+  "https://www.google.com/search?q=" +
+  encodeURIComponent(word);
   };
 
  recognition.onerror = (e) => {
@@ -3577,3 +3581,19 @@ function extractWordAfterTrigger(text, trigger) {
 
   return parts[0] || null;
 }
+
+function shutdownMicrophone(recognitionInstance) {
+  try {
+    if (recognitionInstance) {
+      recognitionInstance.onresult = null;
+      recognitionInstance.onerror = null;
+      recognitionInstance.onend = null;
+
+      recognitionInstance.abort(); // força encerrar no iOS
+    }
+  } catch (e) {}
+
+  clearTimeout(fallbackSilenceTimer);
+  fallbackActive = false;
+}
+
