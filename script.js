@@ -3511,13 +3511,24 @@ function listenOnce() {
   recognition.onerror = (e) => {
   fallbackActive = false;
 
-  if (e.error === "not-allowed") {
+  if (e.error === "aborted") {
+    // NÃO é erro — apenas pede novo toque
+    $("fallbackStatus").innerText = "Toque para ouvir novamente";
+  } 
+  else if (e.error === "not-allowed") {
     $("fallbackStatus").innerText =
-      "Permissão bloqueada. Toque para tentar novamente.";
-  } else {
+      "Permissão do microfone bloqueada. Toque para continuar.";
+  } 
+  else {
     $("fallbackStatus").innerText =
-      "Erro. Toque para ouvir novamente.";
+      "Não entendi. Toque para tentar novamente.";
   }
+
+  $("fallbackStatus").onclick = () => {
+    $("fallbackStatus").onclick = null;
+    startFallbackLoop();
+  };
+};
 
   $("fallbackStatus").onclick = () => {
     $("fallbackStatus").onclick = null;
