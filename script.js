@@ -3342,39 +3342,80 @@ function goBackOneStep() {
 }
 
 /* ============================================================
-   FALLBACK MODE — FINAL (iOS SAFE / SEM LOOP FANTASMA)
+   FALLBACK MODE – CONFIGURAÇÕES + RECONHECIMENTO
+   ============================================================ */
+
+const FALLBACK_STANDALONE_KEY = "axis_fb_standalone";
+const FALLBACK_NONAME_KEY = "axis_fb_noname";
+
+let fallbackStandaloneConfig = { trigger: "", delay: 0 };
+let fallbackNoNameConfig = { trigger: "", delay: 0 };
+
+function loadFallbackConfigs() {
+  try {
+    const s = localStorage.getItem(FALLBACK_STANDALONE_KEY);
+    if (s) fallbackStandaloneConfig = JSON.parse(s);
+  } catch (e) {}
+
+  try {
+    const n = localStorage.getItem(FALLBACK_NONAME_KEY);
+    if (n) fallbackNoNameConfig = JSON.parse(n);
+  } catch (e) {}
+}
+
+function applyFallbackConfigToUI() {
+  const sTrig = $("fbStandaloneTrigger");
+  const sDelay = $("fbStandaloneDelay");
+  const nTrig = $("fbNoNameTrigger");
+  const nDelay = $("fbNoNameDelay");
+
+  if (sTrig) sTrig.value = fallbackStandaloneConfig.trigger || "";
+  if (sDelay) sDelay.value = fallbackStandaloneConfig.delay || 0;
+  if (nTrig) nTrig.value = fallbackNoNameConfig.trigger || "";
+  if (nDelay) nDelay.value = fallbackNoNameConfig.delay || 0;
+}
+
+function openSettings() {
+  applyFallbackConfigToUI();
+  openOnly("settingsPanel");
+}
+
+function saveFallbackConfigs() {
+  const sTrig = $("fbStandaloneTrigger")?.value.trim() || "";
+  const sDelay = parseInt($("fbStandaloneDelay")?.value || "0", 10) || 0;
+  const nTrig = $("fbNoNameTrigger")?.value.trim() || "";
+  const nDelay = parseInt($("fbNoNameDelay")?.value || "0", 10) || 0;
+
+  fallbackStandaloneConfig = { trigger: sTrig, delay: sDelay };
+  fallbackNoNameConfig = { trigger: nTrig, delay: nDelay };
+
+  localStorage.setItem(FALLBACK_STANDALONE_KEY, JSON.stringify(fallbackStandaloneConfig));
+  localStorage.setItem(FALLBACK_NONAME_KEY, JSON.stringify(fallbackNoNameConfig));
+
+  goHome(true);
+}
+
+/* ============================================================
+   FALLBACK MODE — ROBUSTO (iOS SAFE)
    ============================================================ */
 
 let fallbackActive = false;
-let fallbackClosed = false;
 let fallbackTrigger = "";
 let fallbackSilenceTimer = null;
-let activeRecognition = null;
 
-/* ---------- ENTRADA ---------- */
+/* ---------- ENTRADA PRINCIPAL ---------- */
 
 function startFallbackStandalone() {
   startFallbackWithConfig("standalone");
 }
-function startFallbackFromNoNames() {
-  startFallbackNoName(); // só isso
-}
-  // 🔒 reset TOTAL de estado
-  fallbackActive = false;
-  fallbackClosed = false;
 
-  clearTimeout(fallbackSilenceTimer);
-  fallbackSilenceTimer = null;
-
+function startFallbackNoName() {
   startFallbackWithConfig("noname");
 }
 
-/* ---------- CONFIG ---------- */
+/* ---------- CONFIGURAÇÃO ---------- */
 
 function startFallbackWithConfig(kind) {
-  fallbackClosed = false;
-  fallbackActive = false;
-
   const cfg =
     kind === "standalone"
       ? fallbackStandaloneConfig
@@ -3390,39 +3431,48 @@ function startFallbackWithConfig(kind) {
 
   if (delaySec > 0) {
     status.innerText = `Aguarde ${delaySec} segundos…`;
-    setTimeout(showTapToStart, delaySec * 1000);
+    setTimeout(() => prepareUserTap(), delaySec * 1000);
   } else {
-    showTapToStart();
+    prepareUserTap();
   }
 }
 
-/* ---------- TAP ---------- */
+/* ---------- GESTO OBRIGATÓRIO DO USUÁRIO ---------- */
 
-function showTapToStart() {
+function prepareUserTap() {
   const status = $("fallbackStatus");
   status.innerText = "Toque para iniciar";
   status.onclick = () => {
     status.onclick = null;
-    startListening();
+    startFallbackLoop();
   };
 }
 
-/* ---------- START ---------- */
+/* ---------- LOOP PRINCIPAL ---------- */
 
-function startListening() {
-  if (fallbackClosed) return;
-
+function startFallbackLoop() {
   fallbackActive = true;
+  listenOnce();
+}
+
+function stopFallback() {
+  fallbackActive = false;
+  clearTimeout(fallbackSilenceTimer);
+}
+
+/* ---------- RECONHECIMENTO ---------- */
+
+function listenOnce() {
+  if (!fallbackActive) return;
 
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
     $("fallbackStatus").innerText = "Reconhecimento não suportado.";
+    stopFallback();
     return;
   }
 
   const recognition = new SR();
-  activeRecognition = recognition;
-
   recognition.lang = "pt-BR";
   recognition.interimResults = false;
   recognition.maxAlternatives = 3;
@@ -3430,90 +3480,100 @@ function startListening() {
 
   $("fallbackStatus").innerText = "🎙️ Ouvindo…";
 
-  recognition.onresult = (event) => {
-    if (fallbackClosed) return;
+  resetSilenceWatchdog();
 
+  recognition.onresult = (event) => {
     clearTimeout(fallbackSilenceTimer);
 
     let text = "";
     try {
       text = event.results[0][0].transcript.toLowerCase().trim();
     } catch {
-      askTapAgain("Não entendi.");
+      restartListening("Não entendi. Repita.");
       return;
     }
 
     const word = extractWordAfterTrigger(text, fallbackTrigger);
+
     if (!word) {
-      askTapAgain("Use a palavra gatilho.");
+      restartListening("Use a palavra gatilho.");
       return;
     }
 
-    // 🔒 FECHA TUDO DE VEZ
-    hardStopFallback();
-
     $("fallbackStatus").innerText = `Abrindo: ${word}`;
+    stopFallback();
 
-    window.open(
-      "https://www.google.com/search?q=" + encodeURIComponent(word),
-      "_blank"
-    );
+    window.location.href =
+      "https://www.google.com/search?q=" +
+      encodeURIComponent(word);
   };
 
-  recognition.onerror = () => {
-    if (fallbackClosed) return;
-    askTapAgain("Repete pra mim.");
-  };
-
-  recognition.onend = () => {
-    if (fallbackClosed) return;
-    askTapAgain("Toque para ouvir novamente");
-  };
-
-  recognition.start();
-}
-
-/* ---------- HARD STOP ---------- */
-
-function hardStopFallback() {
-  fallbackClosed = true;
+ recognition.onerror = (e) => {
   fallbackActive = false;
 
-  clearTimeout(fallbackSilenceTimer);
-  fallbackSilenceTimer = null;
+  if (e.error === "aborted") {
+    // NÃO é erro — apenas pede novo toque
+    $("fallbackStatus").innerText = "Toque para ouvir novamente";
+  } 
+  else if (e.error === "not-allowed") {
+    $("fallbackStatus").innerText =
+      "Permissão do microfone bloqueada. Toque para continuar.";
+  } 
+  else {
+    $("fallbackStatus").innerText =
+      "Não entendi. Toque para tentar novamente.";
+  }
+
+  $("fallbackStatus").onclick = () => {
+    $("fallbackStatus").onclick = null;
+    startFallbackLoop();
+  };
+};
+   
+   
+recognition.onend = () => {
+  fallbackActive = false;
+  $("fallbackStatus").innerText = "Toque para ouvir novamente";
+  $("fallbackStatus").onclick = () => {
+    $("fallbackStatus").onclick = null;
+    startFallbackLoop();
+  };
+};
 
   try {
-    if (activeRecognition) {
-      activeRecognition.onresult = null;
-      activeRecognition.onerror = null;
-      activeRecognition.onend = null;
-      activeRecognition.abort();
-    }
-  } catch {}
-
-  activeRecognition = null;
+    recognition.start();
+  } catch {
+    restartListening("Erro ao iniciar mic.");
+  }
 }
 
-/* ---------- TAP DE NOVO ---------- */
+/* ---------- SILÊNCIO / WATCHDOG ---------- */
 
-function askTapAgain(msg) {
-  fallbackActive = false;
+function resetSilenceWatchdog() {
   clearTimeout(fallbackSilenceTimer);
-
-  const status = $("fallbackStatus");
-  status.innerText = msg || "Toque para ouvir novamente";
-  status.onclick = () => {
-    if (fallbackClosed) return;
-    status.onclick = null;
-    startListening();
-  };
+  fallbackSilenceTimer = setTimeout(() => {
+    restartListening("Silêncio… ouvindo de novo.");
+  }, 5000);
 }
 
-/* ---------- UTIL ---------- */
+function restartListening(msg) {
+  $("fallbackStatus").innerText = msg;
+  clearTimeout(fallbackSilenceTimer);
+  setTimeout(() => {
+    if (fallbackActive) listenOnce();
+  }, 300);
+}
+
+/* ---------- EXTRAÇÃO DE PALAVRA ---------- */
 
 function extractWordAfterTrigger(text, trigger) {
   if (!trigger) return null;
+
   const idx = text.indexOf(trigger);
   if (idx < 0) return null;
-  return text.slice(idx + trigger.length).trim().split(/\s+/)[0] || null;
+
+  const after = text.slice(idx + trigger.length).trim();
+  const parts = after.split(/\s+/);
+
+  return parts[0] || null;
 }
