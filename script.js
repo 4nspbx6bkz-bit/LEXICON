@@ -3483,35 +3483,35 @@ function listenOnce() {
   resetSilenceWatchdog();
 
   recognition.onresult = (event) => {
-    clearTimeout(fallbackSilenceTimer);
+  clearTimeout(fallbackSilenceTimer);
 
-    let text = "";
-    try {
-      text = event.results[0][0].transcript.toLowerCase().trim();
-    } catch {
-      restartListening("Não entendi. Repita.");
-      return;
-    }
+  let text = "";
+  try {
+    text = event.results[0][0].transcript.toLowerCase().trim();
+  } catch {
+    restartListening("Não entendi. Repita.");
+    return;
+  }
 
-    const word = extractWordAfterTrigger(text, fallbackTrigger);
+  const word = extractWordAfterTrigger(text, fallbackTrigger);
 
-    if (!word) {
-      restartListening("Use a palavra gatilho.");
-      return;
-    }
+  if (!word) {
+    restartListening("Use a palavra gatilho.");
+    return;
+  }
 
-    $("fallbackStatus").innerText = `Abrindo: ${word}`;
-    stopFallback();
+  // 🔒 encerra completamente o fallback
+  stopFallback();
+  shutdownMicrophone(recognition);
 
-    shutdownMicrophone(recognition);
+  $("fallbackStatus").innerText = `Abrindo: ${word}`;
 
-$("fallbackStatus").innerText = `Abrindo: ${word}`;
-
-window.location.href =
-  "https://www.google.com/search?q=" +
-  encodeURIComponent(word);
-  };
-
+  // ✅ OPÇÃO 1 — ABRIR EM NOVA ABA (fecha o mic visualmente)
+  window.open(
+    "https://www.google.com/search?q=" + encodeURIComponent(word),
+    "_blank"
+  );
+};
  recognition.onerror = (e) => {
   fallbackActive = false;
 
