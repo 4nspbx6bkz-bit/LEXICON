@@ -3402,6 +3402,7 @@ function saveFallbackConfigs() {
 let fallbackActive = false;
 let fallbackTrigger = "";
 let fallbackSilenceTimer = null;
+let fallbackClosed = false; // ⬅️ FLAG DEFINITIVO
 
 /* ---------- ENTRADA PRINCIPAL ---------- */
 
@@ -3420,6 +3421,7 @@ function startFallbackWithConfig(kind) {
     kind === "standalone"
       ? fallbackStandaloneConfig
       : fallbackNoNameConfig;
+     fallbackClosed = false; // ⬅️ permite escuta nova
 
   fallbackTrigger = (cfg.trigger || "").toLowerCase().trim();
   const delaySec = parseInt(cfg.delay || 0, 10) || 0;
@@ -3500,34 +3502,11 @@ function listenOnce() {
     return;
   }
 
-  // 🔒 encerra completamente o fallback
-  stopFallback();
-  shutdownMicrophone(recognition);
-
-  $("fallbackStatus").innerText = `Abrindo: ${word}`;
-
-  // ✅ OPÇÃO 1 — ABRIR EM NOVA ABA (fecha o mic visualmente)
-  window.open(
-    "https://www.google.com/search?q=" + encodeURIComponent(word),
-    "_blank"
-  );
-};
  recognition.onerror = (e) => {
+  if (fallbackClosed) return;
+
   fallbackActive = false;
-
-  if (e.error === "aborted") {
-    // NÃO é erro — apenas pede novo toque
-    $("fallbackStatus").innerText = "Toque para ouvir novamente";
-  } 
-  else if (e.error === "not-allowed") {
-    $("fallbackStatus").innerText =
-      "Permissão do microfone bloqueada. Toque para continuar.";
-  } 
-  else {
-    $("fallbackStatus").innerText =
-      "Não entendi. Toque para tentar novamente.";
-  }
-
+  $("fallbackStatus").innerText = "Toque para ouvir novamente";
   $("fallbackStatus").onclick = () => {
     $("fallbackStatus").onclick = null;
     startFallbackLoop();
@@ -3536,6 +3515,8 @@ function listenOnce() {
    
    
 recognition.onend = () => {
+  if (fallbackClosed) return;
+
   fallbackActive = false;
   $("fallbackStatus").innerText = "Toque para ouvir novamente";
   $("fallbackStatus").onclick = () => {
