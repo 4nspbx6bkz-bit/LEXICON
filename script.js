@@ -3508,7 +3508,7 @@ function listenOnce() {
       encodeURIComponent(word);
   };
 
-  recognition.onerror = (e) => {
+ recognition.onerror = (e) => {
   fallbackActive = false;
 
   if (e.error === "aborted") {
@@ -3529,12 +3529,7 @@ function listenOnce() {
     startFallbackLoop();
   };
 };
-
-  $("fallbackStatus").onclick = () => {
-    $("fallbackStatus").onclick = null;
-    startFallbackLoop();
-  };
-};
+   
    
 recognition.onend = () => {
   fallbackActive = false;
