@@ -3508,15 +3508,31 @@ function listenOnce() {
       encodeURIComponent(word);
   };
 
-  recognition.onerror = () => {
-    restartListening("Erro. Ouvindo novamente…");
-  };
+  recognition.onerror = (e) => {
+  fallbackActive = false;
 
-  recognition.onend = () => {
-    if (fallbackActive) {
-      setTimeout(listenOnce, 200);
-    }
+  if (e.error === "not-allowed") {
+    $("fallbackStatus").innerText =
+      "Permissão bloqueada. Toque para tentar novamente.";
+  } else {
+    $("fallbackStatus").innerText =
+      "Erro. Toque para ouvir novamente.";
+  }
+
+  $("fallbackStatus").onclick = () => {
+    $("fallbackStatus").onclick = null;
+    startFallbackLoop();
   };
+};
+   
+recognition.onend = () => {
+  fallbackActive = false;
+  $("fallbackStatus").innerText = "Toque para ouvir novamente";
+  $("fallbackStatus").onclick = () => {
+    $("fallbackStatus").onclick = null;
+    startFallbackLoop();
+  };
+};
 
   try {
     recognition.start();
