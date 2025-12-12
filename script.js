@@ -3356,8 +3356,16 @@ let activeRecognition = null;
 function startFallbackStandalone() {
   startFallbackWithConfig("standalone");
 }
+function startFallbackFromNoNames() {
+  startFallbackNoName(); // só isso
+}
+  // 🔒 reset TOTAL de estado
+  fallbackActive = false;
+  fallbackClosed = false;
 
-function startFallbackNoName() {
+  clearTimeout(fallbackSilenceTimer);
+  fallbackSilenceTimer = null;
+
   startFallbackWithConfig("noname");
 }
 
